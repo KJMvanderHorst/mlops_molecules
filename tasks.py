@@ -24,6 +24,15 @@ def test(ctx: Context) -> None:
     ctx.run("uv run coverage report -m -i", echo=True, pty=not WINDOWS)
 
 @task
+def train_docker(ctx: Context, verbose=False) -> None:
+    """Train model."""
+    models_path = "$(pwd)/models:/models/"
+    if verbose:
+        ctx.run(f"docker run --rm -t --name train -v {models_path} train:latest", echo=True, pty=not WINDOWS)
+    else:
+        ctx.run(f"docker run --rm -v {models_path} train:latest", echo=True, pty=not WINDOWS)
+
+@task
 def docker_build(ctx: Context, progress: str = "plain") -> None:
     """Build docker images."""
     ctx.run(
