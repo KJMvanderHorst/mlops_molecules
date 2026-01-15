@@ -4,5 +4,4 @@ num_node_features: 11
 num_edge_features: 4
 hidden_dim: 128
 num_layers: 3
-output_dim: 1
 dropout: 0.1

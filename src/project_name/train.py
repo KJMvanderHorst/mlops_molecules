@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Constants
-TARGET_PROPERTY_IDX = 4  # Index of target property in QM9 dataset
 LOG_INTERVAL = 10  # Print training stats every N epochs
 
 
@@ -30,6 +29,7 @@ def train_epoch(
     loader: DataLoader,
     optimizer: Optimizer,
     device: torch.device,
+    target_indices: list[int],
 ) -> float:
     """Train for one epoch.
 
@@ -38,6 +38,7 @@ def train_epoch(
         loader: DataLoader for training data.
         optimizer: PyTorch optimizer.
         device: Device to train on (cuda/mps/cpu).
+        target_indices: List of target property indices to predict.
 
     Returns:
         Average MSE loss for the epoch.
@@ -51,7 +52,7 @@ def train_epoch(
         optimizer.zero_grad()
 
         pred: torch.Tensor = model(batch)
-        target: torch.Tensor = batch.y[:, TARGET_PROPERTY_IDX].unsqueeze(1)
+        target: torch.Tensor = batch.y[:, target_indices]
 
         loss: torch.Tensor = F.mse_loss(pred, target)
 
@@ -69,6 +70,7 @@ def evaluate(
     model: GraphNeuralNetwork,
     loader: DataLoader,
     device: torch.device,
+    target_indices: list[int],
 ) -> float:
     """Evaluate the model on a dataset.
 
@@ -76,6 +78,7 @@ def evaluate(
         model: The GNN model.
         loader: DataLoader for validation/test data.
         device: Device to evaluate on.
+        target_indices: List of target property indices to predict.
 
     Returns:
         Average MSE loss over the dataset.
@@ -88,7 +91,7 @@ def evaluate(
         batch = batch.to(device)
 
         pred: torch.Tensor = model(batch)
-        target: torch.Tensor = batch.y[:, TARGET_PROPERTY_IDX].unsqueeze(1)
+        target: torch.Tensor = batch.y[:, target_indices]
         loss: torch.Tensor = F.mse_loss(pred, target)
         
         total_loss += loss.item() * batch.num_graphs
@@ -147,12 +150,17 @@ def train(cfg: DictConfig) -> None:
 
     logger.info(f"Dataset split - Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
 
+    # Get target indices and infer output dimension
+    target_indices: list[int] = list(cfg.training.target_indices)
+    num_targets: int = len(target_indices)
+    logger.info(f"Predicting {num_targets} target(s): {target_indices}")
+
     # Initialize model
     model: GraphNeuralNetwork = GraphNeuralNetwork(
         num_node_features=cfg.model.num_node_features,
         hidden_dim=cfg.model.hidden_dim,
         num_layers=cfg.model.num_layers,
-        output_dim=cfg.model.output_dim,
+        output_dim=num_targets,  # Automatically inferred!
     ).to(device)
 
     optimizer: Optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
@@ -166,8 +174,8 @@ def train(cfg: DictConfig) -> None:
     
     # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
-        train_loss: float = train_epoch(model, train_loader, optimizer, device)
-        val_loss: float = evaluate(model, val_loader, device)
+        train_loss: float = train_epoch(model, train_loader, optimizer, device, target_indices)
+        val_loss: float = evaluate(model, val_loader, device, target_indices)
 
         if epoch % LOG_INTERVAL == 0 or epoch == 1:
             logger.info(f"Epoch {epoch:3d} | Train Loss: {train_loss:.6f} | Val Loss: {val_loss:.6f}")
@@ -189,7 +197,7 @@ def train(cfg: DictConfig) -> None:
     # Load best model and evaluate on test set
     best_model_path = model_dir / "best_model.pt"
     model.load_state_dict(torch.load(best_model_path, weights_only=True))
-    test_loss: float = evaluate(model, test_loader, device)
+    test_loss: float = evaluate(model, test_loader, device, target_indices)
     logger.info(f"Final test loss: {test_loss:.6f}")
 
     # Save final model
