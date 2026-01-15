@@ -104,7 +104,6 @@ def train(
         train_ratio: Fraction of data for training.
         val_ratio: Fraction of data for validation.
         profile: Whether to enable profiling.
-        max_samples: Maximum number of samples to use (for testing). If None, uses all.
     """
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
