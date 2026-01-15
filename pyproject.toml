@@ -21,6 +21,7 @@ dependencies = [
     "dvc-gs>=3.0.2",
     "fastapi==0.128.0",
     "fsspec>=2026.1.0",
+    "hydra-core>=1.3.2",
     "pathspec==0.12.1",
     "torch==2.6.0",
     "torch-geometric>=2.7.0",

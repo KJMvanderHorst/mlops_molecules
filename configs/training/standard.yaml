@@ -1,0 +1,13 @@
+data_path: data
+model_dir: models
+
+epochs: 100
+batch_size: 32
+learning_rate: 0.001
+
+target_idx: 4
+
+train_ratio: 0.8
+val_ratio: 0.1
+
+patience: 20
