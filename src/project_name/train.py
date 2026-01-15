@@ -8,8 +8,8 @@ from torch_geometric.transforms import NormalizeScale
 
 import typer
 
-from model import GraphNeuralNetwork
-from data import load_qm9_dataset
+from .model import GraphNeuralNetwork
+from .data import load_qm9_dataset
 
 
 def train_epoch(
@@ -37,7 +37,7 @@ def train_epoch(
         optimizer.zero_grad()
 
         pred = model(batch)
-        target = batch.y[:, 0].unsqueeze(1)
+        target = batch.y[:, 4].unsqueeze(1)
 
         loss = F.mse_loss(pred, target)
 
@@ -72,8 +72,7 @@ def evaluate(
         batch = batch.to(device)
 
         pred = model(batch)
-        target = batch.y[:, 0].unsqueeze(1)
-
+        target = batch.y[:, 4].unsqueeze(1)
         loss = F.mse_loss(pred, target)
         total_loss += loss.item() * batch.num_graphs
 
@@ -175,4 +174,3 @@ def train(
 
 if __name__ == "__main__":
     typer.run(train)
-

@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import typer
-import torch
 from torch.utils.data import Dataset
 from torch_geometric.datasets import QM9
 
