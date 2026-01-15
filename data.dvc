@@ -1,0 +1,32 @@
+outs:
+- hash: md5
+  path: data
+  files:
+  - relpath: processed/data_v3.pt
+    md5: 9817288abbb32d23bb61d8182f772a17
+    size: 329136937
+    cloud:
+      remote_storage:
+        etag: 088d8c92f5ba8d92031001
+        version_id: '1768477188982285'
+  - relpath: processed/pre_filter.pt
+    md5: afdf511df54012cb2988834bd3f6b341
+    size: 864
+    cloud:
+      remote_storage:
+        etag: 08cce9ba9cb98d92031001
+        version_id: '1768476734567628'
+  - relpath: processed/pre_transform.pt
+    md5: afdf511df54012cb2988834bd3f6b341
+    size: 864
+    cloud:
+      remote_storage:
+        etag: 08ddfcb99cb98d92031001
+        version_id: '1768476734553693'
+  - relpath: raw/qm9_v3.pt
+    md5: 9954234100c82cd0125e444182df91f7
+    size: 388111571
+    cloud:
+      remote_storage:
+        etag: 08f6ae9d9cb98d92031001
+        version_id: '1768476734084982'

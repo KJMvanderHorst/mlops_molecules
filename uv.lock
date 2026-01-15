@@ -667,7 +667,7 @@ wheels = [
 
 [[package]]
 name = "dvc"
-version = "3.65.0"
+version = "3.66.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -713,14 +713,14 @@ dependencies = [
     { name = "voluptuous" },
     { name = "zc-lockfile" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/85/1689824deb1c507a2c0ec68e9bd4c7608796e45d765e4d802aac4f4219fb/dvc-3.65.0.tar.gz", hash = "sha256:212fc1d79a29ef76f1a61260e7b0262057a7383dfa047e66d98cfa0a8a18b50e", size = 672693, upload-time = "2025-12-22T07:50:16.427Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/46/134ce696e6d4e857e4378ad5dd6f84eac3e1c3b66cdada89baade9cfd1e9/dvc-3.66.1.tar.gz", hash = "sha256:ed8e07050fdf1fc222ea95afbef8540820179e42022bc068c7b343f2a1304e69", size = 674159, upload-time = "2026-01-08T15:29:38.496Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/cf/da62f36c21fe7d6ebf3dd494cd3a72dc432b06ea4daf6afb5660f4ec7561/dvc-3.65.0-py3-none-any.whl", hash = "sha256:c2157b4e7a3b38515c16297fed42f8acf933643245d803ad5f834932c1c6b165", size = 469022, upload-time = "2025-12-22T07:50:14.135Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/66/95726b3700988a8c08f5f1a7221bc93d7984a61ef8889ed10dd50b0dbb70/dvc-3.66.1-py3-none-any.whl", hash = "sha256:6805637cde28902ada95b33127c6a36b85133d6b0f161626eb473504605f686f", size = 469657, upload-time = "2026-01-08T15:29:36.503Z" },
 ]
 
 [[package]]
 name = "dvc-data"
-version = "3.17.0"
+version = "3.18.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -733,9 +733,9 @@ dependencies = [
     { name = "sqltrie" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/ef/a258ed2e77b9350b19b102ced61d2fa162bb1e0ccaf8126b57c6fc08cf4c/dvc_data-3.17.0.tar.gz", hash = "sha256:c380c32cb3bf52195e285b0d84bcc0cf8eed0fb09ba9173bdf53b279a74481ce", size = 84019, upload-time = "2025-12-22T07:03:12.535Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/7f/fa1be22d32ccf49fb605cad410182f85c744bbfc51e5759141f0a7eaad64/dvc_data-3.18.2.tar.gz", hash = "sha256:71c0bf7e62514dbad06db796a3f3aac5ccae672222b6be67029157e4efa5d359", size = 84517, upload-time = "2026-01-08T13:58:30.436Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/1e/8a0c89dbc8dbb143aaa8f3e88e9db7cf845272af1a5ad1f04e7cde478e71/dvc_data-3.17.0-py3-none-any.whl", hash = "sha256:41fbd15e9a18b83a5388f34bad1a6500a101d77e8738d1ca4f8678d88f425e35", size = 79068, upload-time = "2025-12-22T07:03:10.73Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/5b/b7c2bdc92193ff1cae5aad747c1f2ee310a685a8dbfbbb2f4f3e3f87d6ba/dvc_data-3.18.2-py3-none-any.whl", hash = "sha256:a8114b5bb909823793c63f1de7db30acc5cc7cc0e170704d99a3d9dccc0101e9", size = 79322, upload-time = "2026-01-08T13:58:29.038Z" },
 ]
 
 [[package]]
@@ -862,15 +862,15 @@ wheels = [
 
 [[package]]
 name = "flufl-lock"
-version = "8.2.0"
+version = "9.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "atpublic" },
     { name = "psutil" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/90/78/80f98f67deb8ba9b67e00a91ceb1ded5a7b8eb2b7801b89625d3396fc9d4/flufl_lock-8.2.0.tar.gz", hash = "sha256:15b333c35fab1a36b223840057258aeb4cd79f0fbaf82c144f23cdf6cf14d5e3", size = 33514, upload-time = "2025-05-08T23:32:51.24Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/90/242e0362ae44826309dde73311312b7cb1a8017487221685ab8af4519ae5/flufl_lock-9.0.0.tar.gz", hash = "sha256:270a46e754af3937735cdd4f8a8f43a2dc4e5c40a24fdf972f5dc6db0862e8bb", size = 34151, upload-time = "2025-11-29T04:35:35.205Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/a1/15e07d6c8b33485c4eed49a170faea16d4c6c4fd9f2cb6242adfaed180e7/flufl_lock-8.2.0-py3-none-any.whl", hash = "sha256:59361e277a50efceff288b8e9d36dd43254ad11a88d42d7716195b848a3fce7c", size = 11251, upload-time = "2025-05-08T23:32:49.939Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/04/ada6c2e9dd03fb8bc0b81fab653907082307abfd0b9792eda2b3ae0232b0/flufl_lock-9.0.0-py3-none-any.whl", hash = "sha256:4c3d1d80ef0fa0039f3a6581a144fa7859499fddda9a7fdf8cd964cdec137eea", size = 11126, upload-time = "2025-11-29T04:35:34.071Z" },
 ]
 
 [[package]]
@@ -1951,9 +1951,10 @@ source = { editable = "." }
 dependencies = [
     { name = "dvc-gs" },
     { name = "fastapi" },
+    { name = "fsspec" },
     { name = "pathspec" },
-    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
+    { name = "torch", version = "2.6.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.6.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
     { name = "torch-geometric" },
     { name = "typer" },
     { name = "uvicorn" },
@@ -1975,6 +1976,7 @@ dev = [
 requires-dist = [
     { name = "dvc-gs", specifier = ">=3.0.2" },
     { name = "fastapi", specifier = "==0.128.0" },
+    { name = "fsspec", specifier = ">=2026.1.0" },
     { name = "pathspec", specifier = "==0.12.1" },
     { name = "torch", specifier = "==2.6.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torch-geometric", specifier = ">=2.7.0" },
@@ -2807,17 +2809,18 @@ name = "torch"
 version = "2.6.0"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
+    "python_full_version >= '3.14' and sys_platform == 'darwin'",
     "python_full_version == '3.13.*' and sys_platform == 'darwin'",
     "python_full_version < '3.13' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "filelock", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "fsspec", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "jinja2", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "networkx", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "setuptools", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "sympy", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
+    { name = "filelock", marker = "sys_platform == 'darwin'" },
+    { name = "fsspec", marker = "sys_platform == 'darwin'" },
+    { name = "jinja2", marker = "sys_platform == 'darwin'" },
+    { name = "networkx", marker = "sys_platform == 'darwin'" },
+    { name = "setuptools", marker = "sys_platform == 'darwin'" },
+    { name = "sympy", marker = "sys_platform == 'darwin'" },
+    { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
 ]
 wheels = [
     { url = "https://download.pytorch.org/whl/cpu/torch-2.6.0-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:9a610afe216a85a8b9bc9f8365ed561535c93e804c2a317ef7fabcc5deda0989" },
@@ -2832,16 +2835,15 @@ resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'darwin'",
     "python_full_version == '3.13.*' and sys_platform != 'darwin'",
     "python_full_version < '3.13' and sys_platform != 'darwin'",
-    "python_full_version >= '3.14' and sys_platform == 'darwin'",
 ]
 dependencies = [
-    { name = "filelock", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
-    { name = "fsspec", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
-    { name = "jinja2", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
-    { name = "networkx", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
-    { name = "setuptools", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
-    { name = "sympy", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.14' or sys_platform != 'darwin'" },
+    { name = "filelock", marker = "sys_platform != 'darwin'" },
+    { name = "fsspec", marker = "sys_platform != 'darwin'" },
+    { name = "jinja2", marker = "sys_platform != 'darwin'" },
+    { name = "networkx", marker = "sys_platform != 'darwin'" },
+    { name = "setuptools", marker = "sys_platform != 'darwin'" },
+    { name = "sympy", marker = "sys_platform != 'darwin'" },
+    { name = "typing-extensions", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
     { url = "https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp312-cp312-linux_x86_64.whl", hash = "sha256:59e78aa0c690f70734e42670036d6b541930b8eabbaa18d94e090abf14cc4d91" },
