@@ -13,7 +13,8 @@ from torch.profiler import profile, ProfilerActivity, tensorboard_trace_handler
 class TrainingProfiler:
     """Manages profiling across entire training session."""
 
-    def __init__(self, enabled: bool = False, output_dir: Optional[Path] = None):
+    def __init__(self, enabled: bool = False, output_dir: Optional[Path] = None,
+                 warmup_steps: int = 1, active_steps: int = 10, repeat_steps: int = 1) -> None:
         """Initialize the training profiler.
 
         Args:
@@ -34,9 +35,9 @@ class TrainingProfiler:
                 profile_memory=True,
                 schedule=torch.profiler.schedule(
                     wait=0,
-                    warmup=1,
-                    active=10,
-                    repeat=1,
+                    warmup=warmup_steps,
+                    active=active_steps,
+                    repeat=repeat_steps,
                 ),
                 on_trace_ready=tensorboard_trace_handler(output_dir),
             )
