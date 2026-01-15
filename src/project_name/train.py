@@ -8,8 +8,8 @@ from torch_geometric.transforms import NormalizeScale
 
 import typer
 
-from .model import GraphNeuralNetwork
-from .data import load_qm9_dataset
+from model import GraphNeuralNetwork
+from data import load_qm9_dataset
 
 
 def train_epoch(
