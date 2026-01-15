@@ -18,11 +18,13 @@ classifiers = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "dvc-gs>=3.0.2",
     "fastapi==0.128.0",
-    "numpy>=1.26.0",
+    "fsspec>=2026.1.0",
+    "pathspec==0.12.1",
     "torch==2.6.0",
-    "torch-geometric==2.5.0",
-    "typer==0.21.1",
+    "torch-geometric>=2.7.0",
+    "typer==0.15.1",
     "uvicorn==0.34.0",
 ]
 
@@ -36,6 +38,8 @@ dev = [
     "pytest==8.3.4",
     "ruff==0.1.3",
     "mkdocstrings-python==1.12.2",
+    "torch-tb-profiler>=0.4.3",
+    "notebook>=7.5.2",
 ]
 
 
