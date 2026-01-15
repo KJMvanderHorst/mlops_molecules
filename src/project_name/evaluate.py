@@ -42,9 +42,7 @@ def evaluate_model(
     val_size = int(val_ratio * n)
     test_size = n - train_size - val_size
 
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size, test_size]
-    )
+    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
@@ -82,13 +80,13 @@ def evaluate_model(
 
     mae_loss = sum(abs(p - t) for p, t in zip(predictions, targets)) / len(targets)
 
-    print(f"\n{'='*50}")
-    print(f"Test Set Evaluation Metrics")
-    print(f"{'='*50}")
+    print(f"\n{'=' * 50}")
+    print("Test Set Evaluation Metrics")
+    print(f"{'=' * 50}")
     print(f"MSE:  {mse_loss:.6f}")
     print(f"RMSE: {rmse_loss:.6f}")
     print(f"MAE:  {mae_loss:.6f}")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
 
 
 if __name__ == "__main__":
