@@ -10,6 +10,7 @@ import typer
 
 from model import GraphNeuralNetwork
 from data import load_qm9_dataset
+from profiling import TrainingProfiler, timing_checkpoint
 
 
 def train_epoch(
@@ -88,6 +89,8 @@ def train(
     target_idx: int = 0,
     train_ratio: float = 0.8,
     val_ratio: float = 0.1,
+    profile: bool = False,
+    profiler_run_dir: str = "test_run",
 ) -> None:
     """Train the GNN model on QM9 dataset.
 
@@ -100,6 +103,7 @@ def train(
         target_idx: Index of target property in QM9.
         train_ratio: Fraction of data for training.
         val_ratio: Fraction of data for validation.
+        profile: Whether to enable profiling.
     """
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
@@ -109,8 +113,9 @@ def train(
     model_dir = Path(model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Loading QM9 dataset...")
-    dataset = load_qm9_dataset(data_path).get_training_dataset()
+    with timing_checkpoint("Load dataset", enabled=profile):
+        print("Loading QM9 dataset...")
+        dataset = load_qm9_dataset(data_path).get_training_dataset()
 
     dataset.transform = NormalizeScale()
 
@@ -142,6 +147,9 @@ def train(
     patience = 20
     patience_counter = 0
 
+    profiler = TrainingProfiler(enabled=profile,
+                                output_dir=Path(f"profiling_results/{profiler_run_dir}"))
+
     print(f"Training for {epochs} epochs...")
     for epoch in range(1, epochs + 1):
         train_loss = train_epoch(model, train_loader, optimizer, device)
@@ -163,6 +171,10 @@ def train(
         if patience_counter >= patience:
             print(f"Early stopping at epoch {epoch}")
             break
+
+        profiler.step()
+
+    profiler.finalize()
 
     model.load_state_dict(torch.load(model_dir / "best_model.pt"))
     test_loss = evaluate(model, test_loader, device)
