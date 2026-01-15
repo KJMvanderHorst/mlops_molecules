@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     x = torch.randn(10, 11)
     edge_index = torch.tensor([[0, 1, 2], [1, 2, 0]], dtype=torch.long)
-    batch = torch.tensor([0, 0, 0])
+    batch = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
     data = Data(x=x, edge_index=edge_index, batch=batch)
 
