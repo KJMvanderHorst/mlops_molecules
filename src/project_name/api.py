@@ -11,11 +11,14 @@ from pydantic import BaseModel, field_validator
 
 from project_name.model import GraphNeuralNetwork
 
+
 # Request/Response Models
 class PredictionRequest(BaseModel):
     """Input for prediction."""
+
     node_features: list[list[float]]
     edge_index: list[list[int]]
+
     @field_validator("node_features")
     def validate_node_features(cls, v: list[list[float]]) -> list[list[float]]:
         """Validate node features have correct number of features.
@@ -33,9 +36,7 @@ class PredictionRequest(BaseModel):
             raise ValueError("node_features cannot be empty")
         num_features = len(v[0])
         if num_features != 11:
-            raise ValueError(
-                f"Each node must have exactly 11 features, got {num_features}"
-            )
+            raise ValueError(f"Each node must have exactly 11 features, got {num_features}")
         if not all(len(features) == num_features for features in v):
             raise ValueError("All nodes must have the same number of features")
         return v
@@ -43,6 +44,7 @@ class PredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     """Prediction output."""
+
     prediction: float
 
 
@@ -56,7 +58,8 @@ class InferenceService:
             num_node_features=11,
             hidden_dim=128,
             num_layers=3,
-            output_dim=1,)
+            output_dim=1,
+        )
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.eval()
 
@@ -82,7 +85,7 @@ service: InferenceService | None = None
 async def lifespan(app: FastAPI):
     """Load model on startup."""
     global service
-    model_path = os.getenv("MODEL_PATH", "models/best_model.pt") # this doesn't make sense for now
+    model_path = os.getenv("MODEL_PATH", "models/best_model.pt")  # this doesn't make sense for now
     service = InferenceService(model_path)
     yield
 

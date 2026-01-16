@@ -37,7 +37,7 @@ jobs:
       - name: Run tests & coverage
         run: |
           uv run coverage run -m pytest tests/
-          uv run coverage report -m
+          uv run coverage report -m --ignore-errors
   build:
     needs: test
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

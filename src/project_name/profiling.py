@@ -13,8 +13,14 @@ from torch.profiler import profile, ProfilerActivity, tensorboard_trace_handler
 class TrainingProfiler:
     """Manages profiling across entire training session."""
 
-    def __init__(self, enabled: bool = False, output_dir: Optional[Path] = None,
-                 warmup_steps: int = 1, active_steps: int = 10, repeat_steps: int = 1) -> None:
+    def __init__(
+        self,
+        enabled: bool = False,
+        output_dir: Optional[Path] = None,
+        warmup_steps: int = 1,
+        active_steps: int = 10,
+        repeat_steps: int = 1,
+    ) -> None:
         """Initialize the training profiler.
 
         Args:
