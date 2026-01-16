@@ -1,20 +1,25 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import hydra
 import torch
 import torch.nn.functional as F
-from omegaconf import DictConfig
+import wandb
+from dotenv import load_dotenv
+from omegaconf import DictConfig, OmegaConf
 from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
 
 from data import QM9Dataset
-from model import GraphNeuralNetwork
 from evaluate import evaluate
+from model import GraphNeuralNetwork
+
+load_dotenv()
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -22,7 +27,30 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Constants
-LOG_INTERVAL = 10  # Print training stats every N epochs
+LOG_INTERVAL = 10
+
+
+def _init_wandb(cfg: DictConfig):
+    """Initalize wandb."""
+    try:
+        enabled = bool(OmegaConf.select(cfg, "wandb.enabled", default=True))
+        if not enabled:
+            return None
+
+        run = wandb.init(
+            project=OmegaConf.select(cfg, "wandb.project", default="qm9-gnn"),
+            entity=OmegaConf.select(cfg, "wandb.entity", default=None),
+            name=OmegaConf.select(cfg, "wandb.name", default=None),
+            tags=list(OmegaConf.select(cfg, "wandb.tags", default=[])),
+            job_type=OmegaConf.select(cfg, "wandb.job_type", default="train"),
+            config=OmegaConf.to_container(cfg, resolve=True),
+        )
+        return run
+
+    except Exception as e:
+        logger.warning("wandb disabled (%s). Continuing without logging.", e)
+        os.environ["WANDB_MODE"] = "disabled"
+        return None
 
 
 def train_epoch(
@@ -32,31 +60,19 @@ def train_epoch(
     device: torch.device,
     target_indices: list[int],
 ) -> float:
-    """Train for one epoch.
-
-    Args:
-        model: The GNN model.
-        loader: DataLoader for training data.
-        optimizer: PyTorch optimizer.
-        device: Device to train on (cuda/mps/cpu).
-        target_indices: List of target property indices to predict.
-
-    Returns:
-        Average MSE loss for the epoch.
-    """
+    """Train for one epoch."""
     model.train()
     total_loss: float = 0.0
     num_samples: int = 0
 
     for batch in loader:
         batch = batch.to(device)
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
 
         pred: torch.Tensor = model(batch)
         target: torch.Tensor = batch.y[:, target_indices]
 
         loss: torch.Tensor = F.mse_loss(pred, target)
-
         loss.backward()
         optimizer.step()
 
@@ -64,6 +80,7 @@ def train_epoch(
         num_samples += batch.num_graphs
 
     return total_loss / num_samples
+
 
 def _get_device() -> torch.device:
     """Determine the best available device.
@@ -73,10 +90,9 @@ def _get_device() -> torch.device:
     """
     if torch.cuda.is_available():
         return torch.device("cuda")
-    elif torch.backends.mps.is_available():
+    if torch.backends.mps.is_available():
         return torch.device("mps")
-    else:
-        return torch.device("cpu")
+    return torch.device("cpu")
 
 
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
@@ -87,10 +103,12 @@ def train(cfg: DictConfig) -> None:
         cfg: Hydra configuration object containing all parameters.
     """
     device: torch.device = _get_device()
-    logger.info(f"Using device: {device}")
+    logger.info("Using device: %s", device)
 
     model_dir: Path = Path(cfg.training.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
+
+    run = _init_wandb(cfg)
 
     logger.info("Loading QM9 dataset...")
     dataset: Dataset = QM9Dataset(cfg.training.data_path)
@@ -105,7 +123,9 @@ def train(cfg: DictConfig) -> None:
     test_size: int = n - train_size - val_size
 
     train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size, test_size], generator=torch.Generator().manual_seed(cfg.seed)
+        dataset,
+        [train_size, val_size, test_size],
+        generator=torch.Generator().manual_seed(cfg.seed),
     )
 
     # Create data loaders
@@ -113,19 +133,19 @@ def train(cfg: DictConfig) -> None:
     val_loader: DataLoader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, shuffle=False)
     test_loader: DataLoader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, shuffle=False)
 
-    logger.info(f"Dataset split - Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
+    logger.info("Dataset split - Train: %d, Val: %d, Test: %d", len(train_dataset), len(val_dataset), len(test_dataset))
 
     # Get target indices and infer output dimension
     target_indices: list[int] = list(cfg.training.target_indices)
     num_targets: int = len(target_indices)
-    logger.info(f"Predicting {num_targets} target(s): {target_indices}")
+    logger.info("Predicting %d target(s): %s", num_targets, target_indices)
 
     # Initialize model
     model: GraphNeuralNetwork = GraphNeuralNetwork(
         num_node_features=cfg.model.num_node_features,
         hidden_dim=cfg.model.hidden_dim,
         num_layers=cfg.model.num_layers,
-        output_dim=num_targets,  # Automatically inferred!
+        output_dim=num_targets,
     ).to(device)
 
     optimizer: Optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
@@ -135,7 +155,13 @@ def train(cfg: DictConfig) -> None:
     patience: int = cfg.training.patience
     patience_counter: int = 0
 
-    logger.info(f"Starting training for {cfg.training.epochs} epochs...")
+    logger.info(
+        "Starting training for %d epochs (batch_size=%d, lr=%g, patience=%d)",
+        cfg.training.epochs,
+        cfg.training.batch_size,
+        cfg.training.learning_rate,
+        patience,
+    )
 
     # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
@@ -143,32 +169,67 @@ def train(cfg: DictConfig) -> None:
         val_loss: float = evaluate(model, val_loader, device, target_indices)
 
         if epoch % LOG_INTERVAL == 0 or epoch == 1:
-            logger.info(f"Epoch {epoch:3d} | Train Loss: {train_loss:.6f} | Val Loss: {val_loss:.6f}")
+            logger.info("Epoch %3d | Train Loss: %.6f | Val Loss: %.6f", epoch, train_loss, val_loss)
 
         # Save best model and handle early stopping
-        if val_loss < best_val_loss:
+        improved = val_loss < best_val_loss
+        if improved:
             best_val_loss = val_loss
             patience_counter = 0
             best_model_path: Path = model_dir / "best_model.pt"
             torch.save(model.state_dict(), best_model_path)
-            logger.debug(f"Saved best model to {best_model_path}")
+            logger.debug("Saved best model to %s", best_model_path)
         else:
             patience_counter += 1
 
+        # wandb logging (safe if disabled)
+        if run is not None:
+            wandb.log(
+                {
+                    "epoch": epoch,
+                    "loss/train": train_loss,
+                    "loss/val": val_loss,
+                    "early_stopping/patience_counter": patience_counter,
+                    "early_stopping/best_val_loss": best_val_loss,
+                }
+            )
+
         if patience_counter >= patience:
-            logger.info(f"Early stopping triggered at epoch {epoch}")
+            logger.info("Early stopping triggered at epoch %d (best_val_loss=%.6f)", epoch, best_val_loss)
             break
 
     # Load best model and evaluate on test set
     best_model_path = model_dir / "best_model.pt"
-    model.load_state_dict(torch.load(best_model_path, weights_only=True))
+
+    try:
+        state = torch.load(best_model_path, weights_only=True)
+    except TypeError:
+        state = torch.load(best_model_path)
+
+    model.load_state_dict(state)
+
     test_loss: float = evaluate(model, test_loader, device, target_indices)
-    logger.info(f"Final test loss: {test_loss:.6f}")
+    logger.info("Final test loss: %.6f", test_loss)
 
     # Save final model
     final_model_path: Path = model_dir / "final_model.pt"
     torch.save(model.state_dict(), final_model_path)
-    logger.info(f"Training complete. Models saved to {model_dir}")
+    logger.info("Training complete. Models saved to %s", model_dir)
+
+    # wandb: final logs
+    if run is not None:
+        wandb.log({"loss/test": test_loss})
+
+        if bool(OmegaConf.select(cfg, "wandb.log_artifacts", default=True)):
+            artifact = wandb.Artifact(
+                name="qm9-gnn",
+                type="model",
+                metadata={"target_indices": target_indices, "best_val_loss": best_val_loss},
+            )
+            artifact.add_file(str(best_model_path))
+            run.log_artifact(artifact)
+
+        wandb.finish()
 
 
 if __name__ == "__main__":
