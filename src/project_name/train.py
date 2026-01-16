@@ -124,9 +124,7 @@ def train(
     val_size = int(val_ratio * n)
     test_size = n - train_size - val_size
 
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size, test_size]
-    )
+    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
@@ -147,8 +145,7 @@ def train(
     patience = 20
     patience_counter = 0
 
-    profiler = TrainingProfiler(enabled=profile,
-                                output_dir=Path(f"profiling_results/{profiler_run_dir}"))
+    profiler = TrainingProfiler(enabled=profile, output_dir=Path(f"profiling_results/{profiler_run_dir}"))
 
     print(f"Training for {epochs} epochs...")
     for epoch in range(1, epochs + 1):
