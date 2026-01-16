@@ -225,7 +225,12 @@ def train(cfg: DictConfig) -> None:
             artifact = wandb.Artifact(
                 name="qm9-gnn",
                 type="model",
-                metadata={"target_indices": target_indices, "best_val_loss": best_val_loss},
+                description="Trained model",
+                metadata={
+                    "target_indices": target_indices,
+                    "best_val_loss": best_val_loss,
+                    "test_loss": test_loss,
+                },
             )
             artifact.add_file(str(best_model_path))
             run.log_artifact(artifact)
