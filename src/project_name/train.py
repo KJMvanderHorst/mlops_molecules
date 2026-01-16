@@ -14,6 +14,7 @@ from torch_geometric.transforms import NormalizeScale
 
 from data import QM9Dataset
 from model import GraphNeuralNetwork
+from evaluate import evaluate
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -63,42 +64,6 @@ def train_epoch(
         num_samples += batch.num_graphs
 
     return total_loss / num_samples
-
-
-@torch.no_grad()
-def evaluate(
-    model: GraphNeuralNetwork,
-    loader: DataLoader,
-    device: torch.device,
-    target_indices: list[int],
-) -> float:
-    """Evaluate the model on a dataset.
-
-    Args:
-        model: The GNN model.
-        loader: DataLoader for validation/test data.
-        device: Device to evaluate on.
-        target_indices: List of target property indices to predict.
-
-    Returns:
-        Average MSE loss over the dataset.
-    """
-    model.eval()
-    total_loss: float = 0.0
-    num_samples: int = 0
-
-    for batch in loader:
-        batch = batch.to(device)
-
-        pred: torch.Tensor = model(batch)
-        target: torch.Tensor = batch.y[:, target_indices]
-        loss: torch.Tensor = F.mse_loss(pred, target)
-
-        total_loss += loss.item() * batch.num_graphs
-        num_samples += batch.num_graphs
-
-    return total_loss / num_samples
-
 
 def _get_device() -> torch.device:
     """Determine the best available device.
