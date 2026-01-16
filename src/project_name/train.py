@@ -12,7 +12,7 @@ from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
 
-from data import load_qm9_dataset
+from data import QM9Dataset
 from model import GraphNeuralNetwork
 
 if TYPE_CHECKING:
@@ -93,7 +93,7 @@ def evaluate(
         pred: torch.Tensor = model(batch)
         target: torch.Tensor = batch.y[:, target_indices]
         loss: torch.Tensor = F.mse_loss(pred, target)
-        
+
         total_loss += loss.item() * batch.num_graphs
         num_samples += batch.num_graphs
 
@@ -128,7 +128,7 @@ def train(cfg: DictConfig) -> None:
     model_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("Loading QM9 dataset...")
-    dataset: Dataset = load_qm9_dataset(cfg.training.data_path).get_training_dataset()
+    dataset: Dataset = QM9Dataset(cfg.training.data_path)
 
     # Apply normalization transform
     dataset.transform = NormalizeScale()
@@ -171,7 +171,7 @@ def train(cfg: DictConfig) -> None:
     patience_counter: int = 0
 
     logger.info(f"Starting training for {cfg.training.epochs} epochs...")
-    
+
     # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
         train_loss: float = train_epoch(model, train_loader, optimizer, device, target_indices)
