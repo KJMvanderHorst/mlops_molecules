@@ -11,6 +11,7 @@ manual_test/
 
 outputs/*
 models/*
+wandb/*
 
 .env
 
@@ -184,4 +185,6 @@ cython_debug/
 #data
 /data/
 /data
+
+models/best_model.pt
 
