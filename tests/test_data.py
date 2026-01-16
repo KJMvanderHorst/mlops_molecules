@@ -2,9 +2,10 @@ import torch
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from torch_geometric.data import Data, Batch
+from torch_geometric.data import Data
 
-from project_name.data import QM9Dataset, load_qm9_dataset
+from project_name.data import QM9Dataset
+
 
 @pytest.fixture
 def sample_qm9_data():
@@ -43,7 +44,9 @@ class TestQM9Dataset:
 
         assert sample.x.shape[1] == 11, f"Node features should be 11, got {sample.x.shape[1]}"
         assert sample.edge_index.dim() == 2, f"Edge index should be 2D, got {sample.edge_index.dim()}D"
-        assert sample.edge_index.shape[0] == 2, f"Edge index should have 2 rows (src, dst), got {sample.edge_index.shape[0]}"
+        assert sample.edge_index.shape[0] == 2, (
+            f"Edge index should have 2 rows (src, dst), got {sample.edge_index.shape[0]}"
+        )
 
     @patch("project_name.data.QM9")
     def test_all_samples_have_labels(self, mock_qm9_class, sample_qm9_data):
@@ -70,6 +73,6 @@ class TestLoadQM9Dataset:
         """Test that load_qm9_dataset returns QM9Dataset instance."""
         mock_qm9_class.return_value = MagicMock()
 
-        dataset = load_qm9_dataset(Path("data"))
+        dataset = QM9Dataset(Path("data"))
 
         assert isinstance(dataset, QM9Dataset), f"Expected QM9Dataset instance, got {type(dataset)}"
