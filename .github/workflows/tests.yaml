@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Unit Tests and Build
 
 on:
   push:
@@ -20,19 +20,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-
       - name: Install dependencies
-        run: uv sync
+        run: |
+          uv sync --dev --locked
 
       - name: Run tests & coverage
-        run: uv run coverage run -m pytest tests/ && uv run coverage report -m
+        run: |
+          uv run coverage run -m pytest tests/
+          uv run coverage report -m
+  build:
+    needs: test
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
 
-      - name: Run pre-commit hooks
-        run: uv run pre-commit run --all-files
+    - name: Auth with GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Submit build
+      run: gcloud builds submit . --config cloudbuild_containers.yaml
