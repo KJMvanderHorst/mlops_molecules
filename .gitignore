@@ -9,6 +9,8 @@ manual_test/
 # Mac OS-specific storage files
 .DS_Store
 
+outputs/*
+models/*
 
 .env
 
@@ -182,3 +184,4 @@ cython_debug/
 #data
 /data/
 /data
+

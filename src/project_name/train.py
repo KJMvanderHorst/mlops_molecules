@@ -9,7 +9,6 @@ import hydra
 import torch
 import torch.nn.functional as F
 import wandb
-from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
 from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
@@ -19,8 +18,6 @@ from data import QM9Dataset
 from evaluate import evaluate
 from model import GraphNeuralNetwork
 
-load_dotenv()
-
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
 
@@ -29,29 +26,31 @@ logger = logging.getLogger(__name__)
 # Constants
 LOG_INTERVAL = 10
 
+def _init_wandb(cfg: DictConfig) -> wandb.run.Run | None:
+    """Initialize wandb run if enabled in config.
 
-def _init_wandb(cfg: DictConfig):
-    """Initalize wandb."""
-    try:
-        enabled = bool(OmegaConf.select(cfg, "wandb.enabled", default=True))
-        if not enabled:
-            return None
-
-        run = wandb.init(
-            project=OmegaConf.select(cfg, "wandb.project", default="qm9-gnn"),
-            entity=OmegaConf.select(cfg, "wandb.entity", default=None),
-            name=OmegaConf.select(cfg, "wandb.name", default=None),
-            tags=list(OmegaConf.select(cfg, "wandb.tags", default=[])),
-            job_type=OmegaConf.select(cfg, "wandb.job_type", default="train"),
-            config=OmegaConf.to_container(cfg, resolve=True),
-        )
-        return run
-
-    except Exception as e:
-        logger.warning("wandb disabled (%s). Continuing without logging.", e)
+    Assumes authentication is handled externally via:
+        wandb login
+    """
+    enabled = bool(OmegaConf.select(cfg, "wandb.enable", default=True))
+    if not enabled:
         os.environ["WANDB_MODE"] = "disabled"
+        logger.info("wandb logging disabled by config.")
         return None
 
+    try:
+        run = wandb.init(
+            project=cfg.wandb.get("project", "mlops-molecules"),
+            config=OmegaConf.to_container(cfg, resolve=True),
+        )
+        logger.info("Initialized wandb run: %s", run.id)
+        return run
+    except Exception as e:
+        logger.warning(
+            "Failed to initialize wandb (%s). Running with wandb disabled.", e
+        )
+        os.environ["WANDB_MODE"] = "disabled"
+        return None
 
 def train_epoch(
     model: GraphNeuralNetwork,
@@ -107,6 +106,8 @@ def train(cfg: DictConfig) -> None:
 
     model_dir: Path = Path(cfg.training.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
+
+    print(cfg)
 
     run = _init_wandb(cfg)
 
