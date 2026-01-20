@@ -32,6 +32,7 @@ dependencies = [
     "uvicorn==0.34.0",
     "wandb>=0.24.0",
     "httpx>=0.28.1",
+    "locust>=2.43.1",
 ]
 
 [dependency-groups]

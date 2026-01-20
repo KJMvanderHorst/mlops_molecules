@@ -12,18 +12,18 @@ from project_name.api import app
 client = TestClient(app)
 
 
-class TestHealthCheck:
+class TestRoot:
     """Test health check endpoint."""
 
     def test_health_check_returns_healthy(self):
         """Test that health check returns status 200 with healthy status."""
-        response = client.get("/health")
+        response = client.get("/")
         assert response.status_code == 200
         assert response.json() == {"status": "healthy"}
 
     def test_health_check_response_structure(self):
         """Test health check response has correct structure."""
-        response = client.get("/health")
+        response = client.get("/")
         data = response.json()
         assert "status" in data
         assert isinstance(data["status"], str)
