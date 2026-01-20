@@ -1,6 +1,3 @@
-"""Minimal inference API."""
-
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -79,14 +76,15 @@ class InferenceService:
 
 # Global service instance
 service: InferenceService | None = None
+FOLDER = "/gcs/models/"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load model on startup."""
     global service
-    model_path = os.getenv("MODEL_PATH", "models/best_model.pt")  # this doesn't make sense for now
-    service = InferenceService(model_path)
+    model_path = "best_model.pt"
+    service = InferenceService(FOLDER + model_path)
     yield
 
 
@@ -94,7 +92,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Molecule Prediction API", lifespan=lifespan)
 
 
-@app.get("/health")
+@app.get("/")
 def health_check():
     """Health check."""
     return {"status": "healthy"}
