@@ -237,6 +237,5 @@ def train(cfg: DictConfig) -> None:
 
         wandb.finish()
 
-
 if __name__ == "__main__":
     train()

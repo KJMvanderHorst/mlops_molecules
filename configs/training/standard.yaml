@@ -10,4 +10,4 @@ target_indices: [4]
 train_ratio: 0.8
 val_ratio: 0.1
 
-patience: 20
+patience: 10
