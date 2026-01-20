@@ -11,3 +11,6 @@ train_ratio: 0.8
 val_ratio: 0.1
 
 patience: 10
+
+profile: false
+profiler_run_dir: "test_run"
