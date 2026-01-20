@@ -1,0 +1,4 @@
+enable: true
+project: mlops-molecules
+name:
+log_artifacts: true

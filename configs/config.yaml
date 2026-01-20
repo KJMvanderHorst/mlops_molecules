@@ -1,0 +1,17 @@
+defaults:
+  - model: gnn
+  - training: standard
+  - wandb: default
+  - _self_
+
+seed: 42
+
+# Suppress Hydra outputs
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+  verbose: false
+  job_logging:
+    root:
+      level: CRITICAL

@@ -1,93 +1,193 @@
-from pathlib import Path
+from __future__ import annotations
 
+from pathlib import Path
+from typing import Sequence
+
+import hydra
 import torch
 import torch.nn.functional as F
+from omegaconf import DictConfig
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
-import typer
 
-from project_name.model import GraphNeuralNetwork
-from project_name.data import load_qm9_dataset
+from data import QM9Dataset
+from model import GraphNeuralNetwork
 
 
-def evaluate_model(
-    model_path: str = "models/best_model.pt",
-    data_path: str = "data",
-    batch_size: int = 32,
-    train_ratio: float = 0.8,
-    val_ratio: float = 0.1,
-) -> None:
-    """Evaluate the trained model on test set.
+@torch.no_grad()
+def evaluate(
+    model: GraphNeuralNetwork,
+    loader: DataLoader,
+    device: torch.device,
+    target_indices: Sequence[int],
+) -> float:
+    """Evaluate model on a dataloader.
+
+    Computes mean MSE loss per graph over the entire loader, matching train_epoch.
 
     Args:
-        model_path: Path to saved model weights.
-        data_path: Path to data directory.
-        batch_size: Batch size for evaluation.
-        train_ratio: Fraction of data used for training.
-        val_ratio: Fraction of data used for validation.
+        model: Trained GNN model.
+        loader: DataLoader for validation/test set.
+        device: Torch device.
+        target_indices: Indices of target properties in batch.y.
+
+    Returns:
+        Mean MSE loss per graph.
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    model.eval()
 
-    model_path = Path(model_path)
-    if not model_path.exists():
-        raise FileNotFoundError(f"Model not found at {model_path}")
+    total_loss: float = 0.0
+    num_samples: int = 0
 
-    print("Loading QM9 dataset...")
-    dataset = load_qm9_dataset(data_path).get_training_dataset()
+    target_idx = list(target_indices)
+
+    for batch in loader:
+        batch = batch.to(device)
+
+        pred: torch.Tensor = model(batch)
+        target: torch.Tensor = batch.y[:, target_idx]
+
+        loss: torch.Tensor = F.mse_loss(pred, target)
+        total_loss += loss.item() * batch.num_graphs
+        num_samples += batch.num_graphs
+
+    if num_samples == 0:
+        return 0.0
+
+    return total_loss / num_samples
+
+
+@torch.no_grad()
+def evaluate_with_metrics(
+    model: GraphNeuralNetwork,
+    loader: DataLoader,
+    device: torch.device,
+    target_indices: Sequence[int],
+) -> dict[str, float]:
+    """Evaluate model on a dataloader with multiple metrics.
+
+    Args:
+        model: Trained GNN model.
+        loader: DataLoader for validation/test set.
+        device: Torch device.
+        target_indices: Indices of target properties in batch.y.
+
+    Returns:
+        Dictionary with metrics: mse, rmse, mae, r2.
+    """
+    model.eval()
+
+    all_preds: list[torch.Tensor] = []
+    all_targets: list[torch.Tensor] = []
+
+    target_idx = list(target_indices)
+
+    for batch in loader:
+        batch = batch.to(device)
+
+        pred: torch.Tensor = model(batch)
+        target: torch.Tensor = batch.y[:, target_idx]
+
+        all_preds.append(pred)
+        all_targets.append(target)
+
+    if len(all_preds) == 0:
+        return {"mse": 0.0, "rmse": 0.0, "mae": 0.0, "r2": 0.0}
+
+    predictions = torch.cat(all_preds, dim=0)
+    targets = torch.cat(all_targets, dim=0)
+
+    # MSE
+    mse = F.mse_loss(predictions, targets).item()
+
+    # RMSE
+    rmse = torch.sqrt(F.mse_loss(predictions, targets)).item()
+
+    # MAE
+    mae = F.l1_loss(predictions, targets).item()
+
+    # R² score
+    ss_res = torch.sum((targets - predictions) ** 2).item()
+    ss_tot = torch.sum((targets - torch.mean(targets)) ** 2).item()
+    r2 = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+
+    return {
+        "mse": mse,
+        "rmse": rmse,
+        "mae": mae,
+        "r2": r2,
+    }
+
+
+def get_device() -> torch.device:
+    """Get the best available device for computation."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+@hydra.main(version_base=None, config_path="../../configs", config_name="config")
+def main(cfg: DictConfig) -> None:
+    """Load best model and evaluate on test set with comprehensive metrics."""
+    device = get_device()
+
+    # Load dataset
+    dataset = QM9Dataset(cfg.training.data_path)
     dataset.transform = NormalizeScale()
 
     n = len(dataset)
-    train_size = int(train_ratio * n)
-    val_size = int(val_ratio * n)
+    train_size = int(cfg.training.train_ratio * n)
+    val_size = int(cfg.training.val_ratio * n)
     test_size = n - train_size - val_size
 
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
+    _, _, test_dataset = torch.utils.data.random_split(
+        dataset,
+        [train_size, val_size, test_size],
+        generator=torch.Generator().manual_seed(cfg.seed),
+    )
 
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=False,
+    )
 
+    target_indices = list(cfg.training.target_indices)
+    num_targets = len(target_indices)
+
+    # Build model
     model = GraphNeuralNetwork(
-        num_node_features=11,
-        hidden_dim=128,
-        num_layers=3,
-        output_dim=1,
+        num_node_features=cfg.model.num_node_features,
+        hidden_dim=cfg.model.hidden_dim,
+        num_layers=cfg.model.num_layers,
+        output_dim=num_targets,
     ).to(device)
 
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
+    # Load best model
+    best_model_path = Path(cfg.training.model_dir) / "best_model.pt"
+    print(f"Loading model from: {best_model_path}")
 
-    print(f"Evaluating on {len(test_dataset)} test samples...")
+    try:
+        state = torch.load(best_model_path, weights_only=True)
+    except TypeError:
+        state = torch.load(best_model_path)
 
-    total_loss = 0
-    predictions = []
-    targets = []
+    model.load_state_dict(state)
 
-    with torch.no_grad():
-        for batch in test_loader:
-            batch = batch.to(device)
+    # Evaluate with multiple metrics
+    metrics = evaluate_with_metrics(model, test_loader, device, target_indices)
 
-            pred = model(batch)
-            target = batch.y[:, 0].unsqueeze(1)
-
-            loss = F.mse_loss(pred, target)
-            total_loss += loss.item() * batch.num_graphs
-
-            predictions.extend(pred.cpu().numpy().flatten())
-            targets.extend(target.cpu().numpy().flatten())
-
-    mse_loss = total_loss / len(test_dataset)
-    rmse_loss = torch.sqrt(torch.tensor(mse_loss)).item()
-
-    mae_loss = sum(abs(p - t) for p, t in zip(predictions, targets)) / len(targets)
-
-    print(f"\n{'=' * 50}")
-    print("Test Set Evaluation Metrics")
-    print(f"{'=' * 50}")
-    print(f"MSE:  {mse_loss:.6f}")
-    print(f"RMSE: {rmse_loss:.6f}")
-    print(f"MAE:  {mae_loss:.6f}")
-    print(f"{'=' * 50}")
+    print("\n" + "=" * 50)
+    print("Test Set Evaluation (Best Model)")
+    print("=" * 50)
+    print(f"MSE:  {metrics['mse']:.6f}")
+    print(f"RMSE: {metrics['rmse']:.6f}")
+    print(f"MAE:  {metrics['mae']:.6f}")
+    print(f"R²:   {metrics['r2']:.6f}")
+    print("=" * 50 + "\n")
 
 
 if __name__ == "__main__":
-    typer.run(evaluate_model)
+    main()

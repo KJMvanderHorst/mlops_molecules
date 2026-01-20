@@ -1,185 +1,247 @@
-from pathlib import Path
+from __future__ import annotations
 
+import logging
+import os
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import hydra
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam
+import wandb
+from omegaconf import DictConfig, OmegaConf
+from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
 
-import typer
-
+from data import QM9Dataset
+from evaluate import evaluate
 from model import GraphNeuralNetwork
-from data import load_qm9_dataset
 from profiling import TrainingProfiler, timing_checkpoint
 
+if TYPE_CHECKING:
+    from torch_geometric.data import Dataset
+
+logger = logging.getLogger(__name__)
+
+# Constants
+LOG_INTERVAL = 10
+
+def _init_wandb(cfg: DictConfig) -> wandb.run.Run | None:
+    """Initialize wandb run if enabled in config.
+
+    Assumes authentication is handled externally via:
+        wandb login
+    """
+    enabled = bool(OmegaConf.select(cfg, "wandb.enable", default=True))
+    if not enabled:
+        os.environ["WANDB_MODE"] = "disabled"
+        logger.info("wandb logging disabled by config.")
+        return None
+
+    try:
+        run = wandb.init(
+            project=cfg.wandb.get("project", "mlops-molecules"),
+            config=OmegaConf.to_container(cfg, resolve=True),
+        )
+        logger.info("Initialized wandb run: %s", run.id)
+        return run
+    except Exception as e:
+        logger.warning(
+            "Failed to initialize wandb (%s). Running with wandb disabled.", e
+        )
+        os.environ["WANDB_MODE"] = "disabled"
+        return None
 
 def train_epoch(
     model: GraphNeuralNetwork,
     loader: DataLoader,
-    optimizer: Adam,
+    optimizer: Optimizer,
     device: torch.device,
+    target_indices: list[int],
 ) -> float:
-    """Train for one epoch.
-
-    Args:
-        model: The GNN model.
-        loader: DataLoader for training data.
-        optimizer: Adam optimizer.
-        device: Device to train on (cuda/cpu).
-
-    Returns:
-        Average loss for the epoch.
-    """
+    """Train for one epoch."""
     model.train()
-    total_loss = 0
+    total_loss: float = 0.0
+    num_samples: int = 0
 
     for batch in loader:
         batch = batch.to(device)
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
 
-        pred = model(batch)
-        target = batch.y[:, 4].unsqueeze(1)
+        pred: torch.Tensor = model(batch)
+        target: torch.Tensor = batch.y[:, target_indices]
 
-        loss = F.mse_loss(pred, target)
-
+        loss: torch.Tensor = F.mse_loss(pred, target)
         loss.backward()
         optimizer.step()
 
         total_loss += loss.item() * batch.num_graphs
+        num_samples += batch.num_graphs
 
-    return total_loss / len(loader.dataset)
+    return total_loss / num_samples
 
 
-@torch.no_grad()
-def evaluate(
-    model: GraphNeuralNetwork,
-    loader: DataLoader,
-    device: torch.device,
-) -> float:
-    """Evaluate the model.
-
-    Args:
-        model: The GNN model.
-        loader: DataLoader for validation/test data.
-        device: Device to evaluate on.
+def _get_device() -> torch.device:
+    """Determine the best available device.
 
     Returns:
-        Average MSE loss.
+        PyTorch device (cuda/mps/cpu).
     """
-    model.eval()
-    total_loss = 0
-
-    for batch in loader:
-        batch = batch.to(device)
-
-        pred = model(batch)
-        target = batch.y[:, 4].unsqueeze(1)
-        loss = F.mse_loss(pred, target)
-        total_loss += loss.item() * batch.num_graphs
-
-    return total_loss / len(loader.dataset)
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
 
 
-def train(
-    data_path: str = "data",
-    model_dir: str = "models",
-    epochs: int = 100,
-    batch_size: int = 32,
-    learning_rate: float = 0.001,
-    target_idx: int = 0,
-    train_ratio: float = 0.8,
-    val_ratio: float = 0.1,
-    profile: bool = False,
-    profiler_run_dir: str = "test_run",
-) -> None:
+@hydra.main(version_base=None, config_path="../../configs", config_name="config")
+def train(cfg: DictConfig) -> None:
     """Train the GNN model on QM9 dataset.
 
     Args:
-        data_path: Path to data directory.
-        model_dir: Directory to save trained model.
-        epochs: Number of training epochs.
-        batch_size: Batch size for training.
-        learning_rate: Learning rate for optimizer.
-        target_idx: Index of target property in QM9.
-        train_ratio: Fraction of data for training.
-        val_ratio: Fraction of data for validation.
-        profile: Whether to enable profiling.
+        cfg: Hydra configuration object containing all parameters.
     """
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
-    )
-    print(f"Using device: {device}")
+    device: torch.device = _get_device()
+    logger.info("Using device: %s", device)
 
-    model_dir = Path(model_dir)
+    model_dir: Path = Path(cfg.training.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    with timing_checkpoint("Load dataset", enabled=profile):
-        print("Loading QM9 dataset...")
-        dataset = load_qm9_dataset(data_path).get_training_dataset()
+    print(cfg)
 
+    run = _init_wandb(cfg)
+    with timing_checkpoint("Load dataset", enabled=profile):
+      logger.info("Loading QM9 dataset...")
+      dataset: Dataset = QM9Dataset(cfg.training.data_path)
+
+    # Apply normalization transform
     dataset.transform = NormalizeScale()
 
-    n = len(dataset)
-    train_size = int(train_ratio * n)
-    val_size = int(val_ratio * n)
-    test_size = n - train_size - val_size
+    # Split dataset
+    n: int = len(dataset)
+    train_size: int = int(cfg.training.train_ratio * n)
+    val_size: int = int(cfg.training.val_ratio * n)
+    test_size: int = n - train_size - val_size
 
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, val_size, test_size])
+    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
+        dataset,
+        [train_size, val_size, test_size],
+        generator=torch.Generator().manual_seed(cfg.seed),
+    )
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    # Create data loaders
+    train_loader: DataLoader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=True)
+    val_loader: DataLoader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, shuffle=False)
+    test_loader: DataLoader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, shuffle=False)
 
-    print(f"Train: {len(train_dataset)}, Val: {len(val_dataset)}, Test: {len(test_dataset)}")
+    logger.info("Dataset split - Train: %d, Val: %d, Test: %d", len(train_dataset), len(val_dataset), len(test_dataset))
 
-    model = GraphNeuralNetwork(
-        num_node_features=11,
-        hidden_dim=128,
-        num_layers=3,
-        output_dim=1,
+    # Get target indices and infer output dimension
+    target_indices: list[int] = list(cfg.training.target_indices)
+    num_targets: int = len(target_indices)
+    logger.info("Predicting %d target(s): %s", num_targets, target_indices)
+
+    # Initialize model
+    model: GraphNeuralNetwork = GraphNeuralNetwork(
+        num_node_features=cfg.model.num_node_features,
+        hidden_dim=cfg.model.hidden_dim,
+        num_layers=cfg.model.num_layers,
+        output_dim=num_targets,
     ).to(device)
 
-    optimizer = Adam(model.parameters(), lr=learning_rate)
+    optimizer: Optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
 
-    best_val_loss = float("inf")
-    patience = 20
-    patience_counter = 0
+    # Early stopping variables
+    best_val_loss: float = float("inf")
+    patience: int = cfg.training.patience
+    patience_counter: int = 0
 
+    logger.info(
+        "Starting training for %d epochs (batch_size=%d, lr=%g, patience=%d)",
+        cfg.training.epochs,
+        cfg.training.batch_size,
+        cfg.training.learning_rate,
+        patience,
+    )
     profiler = TrainingProfiler(enabled=profile, output_dir=Path(f"profiling_results/{profiler_run_dir}"))
 
-    print(f"Training for {epochs} epochs...")
-    for epoch in range(1, epochs + 1):
-        train_loss = train_epoch(model, train_loader, optimizer, device)
-        val_loss = evaluate(model, val_loader, device)
 
-        if epoch % 10 == 0 or epoch == 1:
-            print(f"Epoch {epoch:3d} | Train Loss: {train_loss:.6f} | Val Loss: {val_loss:.6f}")
+    # Training loop
+    for epoch in range(1, cfg.training.epochs + 1):
+        train_loss: float = train_epoch(model, train_loader, optimizer, device, target_indices)
+        val_loss: float = evaluate(model, val_loader, device, target_indices)
 
-        if val_loss < best_val_loss:
+        if epoch % LOG_INTERVAL == 0 or epoch == 1:
+            logger.info("Epoch %3d | Train Loss: %.6f | Val Loss: %.6f", epoch, train_loss, val_loss)
+
+        # Save best model and handle early stopping
+        improved = val_loss < best_val_loss
+        if improved:
             best_val_loss = val_loss
             patience_counter = 0
-            torch.save(
-                model.state_dict(),
-                model_dir / "best_model.pt",
-            )
+            best_model_path: Path = model_dir / "best_model.pt"
+            torch.save(model.state_dict(), best_model_path)
+            logger.debug("Saved best model to %s", best_model_path)
         else:
             patience_counter += 1
 
+        # wandb logging (safe if disabled)
+        if run is not None:
+            wandb.log(
+                {
+                    "epoch": epoch,
+                    "loss/train": train_loss,
+                    "loss/val": val_loss,
+                    "early_stopping/patience_counter": patience_counter,
+                    "early_stopping/best_val_loss": best_val_loss,
+                }
+            )
+
         if patience_counter >= patience:
-            print(f"Early stopping at epoch {epoch}")
+            logger.info("Early stopping triggered at epoch %d (best_val_loss=%.6f)", epoch, best_val_loss)
             break
-
+            
         profiler.step()
+  profiler.finalize()
+  
+    # Load best model and evaluate on test set
+    best_model_path = model_dir / "best_model.pt"
 
-    profiler.finalize()
+    try:
+        state = torch.load(best_model_path, weights_only=True)
+    except TypeError:
+        state = torch.load(best_model_path)
 
-    model.load_state_dict(torch.load(model_dir / "best_model.pt"))
-    test_loss = evaluate(model, test_loader, device)
-    print(f"Test Loss: {test_loss:.6f}")
+    model.load_state_dict(state)
 
-    torch.save(model.state_dict(), model_dir / "final_model.pt")
-    print(f"Model saved to {model_dir}")
+    test_loss: float = evaluate(model, test_loader, device, target_indices)
+    logger.info("Final test loss: %.6f", test_loss)
 
+    # Save final model
+    final_model_path: Path = model_dir / "final_model.pt"
+    torch.save(model.state_dict(), final_model_path)
+    logger.info("Training complete. Models saved to %s", model_dir)
+
+    # wandb: final logs
+    if run is not None:
+        wandb.log({"loss/test": test_loss})
+
+        if bool(OmegaConf.select(cfg, "wandb.log_artifacts", default=True)):
+            artifact = wandb.Artifact(
+                name="qm9-gnn",
+                type="model",
+                description="Trained model",
+                metadata={
+                    "target_indices": target_indices,
+                    "best_val_loss": best_val_loss,
+                    "test_loss": test_loss,
+                },
+            )
+            artifact.add_file(str(best_model_path))
+            run.log_artifact(artifact)
+
+        wandb.finish()
 
 if __name__ == "__main__":
-    typer.run(train)
+    train()

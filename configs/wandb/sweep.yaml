@@ -1,0 +1,36 @@
+program: src/project_name/train.py
+
+name: qm9_gnn_sweep
+project: mlops_molecules
+entity: hoboldi
+
+method: bayes
+
+metric:
+  name: loss/val
+  goal: minimize
+
+parameters:
+  training.learning_rate:
+    distribution: log_uniform_values
+    min: 0.00005
+    max: 0.005
+
+  training.batch_size:
+    values: [16, 32, 64]
+
+  training.epochs:
+    values: [60, 100, 140]
+
+  training.patience:
+    values: [10, 20, 30]
+
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - training.data_path=data
+  - training.model_dir=models
+  - training.target_indices=[4]
+  - training.train_ratio=0.8
+  - training.val_ratio=0.1

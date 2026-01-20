@@ -24,11 +24,48 @@ For this project, we will focus on predicting the HOMO-LUMO gap, which is the ga
 
 ---
 
+## QM9 Property Glossary
+
+The QM9 dataset contains 19 regression targets representing various quantum-chemical properties. Below is a complete reference of all available properties:
+
+| Target | Property | Description | Unit |
+|--------|----------|-------------|------|
+| 0 | μ | Dipole moment | D |
+| 1 | α | Isotropic polarizability | a₀³ |
+| 2 | εₕₒₘₒ | Highest occupied molecular orbital energy | Hₐ |
+| 3 | εₗᵤₘₒ | Lowest unoccupied molecular orbital energy | Hₐ |
+| 4 | Δε | Gap between εₕₒₘₒ and εₗᵤₘₒ | Hₐ |
+| 5 | ⟨R²⟩ | Electronic spatial extent | a₀² |
+| 6 | ZPVE | Zero point vibrational energy | Hₐ |
+| 7 | U₀ | Internal energy at 0K | Hₐ |
+| 8 | U | Internal energy at 298.15K | Hₐ |
+| 9 | H | Enthalpy at 298.15K | Hₐ |
+| 10 | G | Free energy at 298.15K | Hₐ |
+| 11 | Cᵥ | Heat capacity at 298.15K | cal/mol·K |
+| 12 | U₀ᴬᵀᴼᴹ | Atomization energy at 0K | Hₐ |
+| 13 | Uᴬᵀᴼᴹ | Atomization energy at 298.15K | Hₐ |
+| 14 | Hᴬᵀᴼᴹ | Atomization enthalpy at 298.15K | Hₐ |
+| 15 | Gᴬᵀᴼᴹ | Atomization free energy at 298.15K | Hₐ |
+| 16 | A | Rotational constant | GHz |
+| 17 | B | Rotational constant | GHz |
+| 18 | C | Rotational constant | GHz |
+
+**Note:** This project focuses on **Target 4 (Δε)**, the HOMO-LUMO gap, which is a key indicator of molecular reactivity and stability.
+
+**Unit abbreviations:**
+- D = Debye
+- a₀ = Bohr radius
+- Hₐ = Hartree (atomic unit of energy)
+
+---
+
 ## Model Design
 
 The model developed in this project is a **graph neural network for graph-level regression**. It follows a message-passing paradigm in which node embeddings are iteratively updated based on information from neighboring nodes and edges. After several message-passing layers, a global pooling operation aggregates node-level embeddings into a single fixed-size representation of the molecule.
 
 This graph-level representation is then passed through a prediction head to output the target molecular property. The architecture is chosen to balance expressiveness and computational efficiency, ensuring that the model can be trained and evaluated within reasonable time constraints while still capturing relevant structural information from molecular graphs.
+## Target Dictionary
+
 
 ## Project structure
 
