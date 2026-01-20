@@ -9,6 +9,8 @@ import hydra
 import torch
 import torch.nn.functional as F
 import wandb
+
+
 from omegaconf import DictConfig, OmegaConf
 from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
@@ -26,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 LOG_INTERVAL = 10
+
 
 def _init_wandb(cfg: DictConfig) -> wandb.run.Run | None:
     """Initialize wandb run if enabled in config.
@@ -47,11 +50,10 @@ def _init_wandb(cfg: DictConfig) -> wandb.run.Run | None:
         logger.info("Initialized wandb run: %s", run.id)
         return run
     except Exception as e:
-        logger.warning(
-            "Failed to initialize wandb (%s). Running with wandb disabled.", e
-        )
+        logger.warning("Failed to initialize wandb (%s). Running with wandb disabled.", e)
         os.environ["WANDB_MODE"] = "disabled"
         return None
+
 
 def train_epoch(
     model: GraphNeuralNetwork,
@@ -107,13 +109,14 @@ def train(cfg: DictConfig) -> None:
 
     model_dir: Path = Path(cfg.training.model_dir)
     model_dir.mkdir(parents=True, exist_ok=True)
-
     print(cfg)
 
+    profile: bool = cfg.training.profile
+    profiler_run_dir: str = cfg.training.profiler_run_dir
     run = _init_wandb(cfg)
     with timing_checkpoint("Load dataset", enabled=profile):
-      logger.info("Loading QM9 dataset...")
-      dataset: Dataset = QM9Dataset(cfg.training.data_path)
+        logger.info("Loading QM9 dataset...")
+        dataset: Dataset = QM9Dataset(cfg.training.data_path)
 
     # Apply normalization transform
     dataset.transform = NormalizeScale()
@@ -166,7 +169,6 @@ def train(cfg: DictConfig) -> None:
     )
     profiler = TrainingProfiler(enabled=profile, output_dir=Path(f"profiling_results/{profiler_run_dir}"))
 
-
     # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
         train_loss: float = train_epoch(model, train_loader, optimizer, device, target_indices)
@@ -201,10 +203,10 @@ def train(cfg: DictConfig) -> None:
         if patience_counter >= patience:
             logger.info("Early stopping triggered at epoch %d (best_val_loss=%.6f)", epoch, best_val_loss)
             break
-            
+
         profiler.step()
-  profiler.finalize()
-  
+    profiler.finalize()
+
     # Load best model and evaluate on test set
     best_model_path = model_dir / "best_model.pt"
 
@@ -242,6 +244,7 @@ def train(cfg: DictConfig) -> None:
             run.log_artifact(artifact)
 
         wandb.finish()
+
 
 if __name__ == "__main__":
     train()
