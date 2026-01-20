@@ -17,6 +17,7 @@ from torch_geometric.transforms import NormalizeScale
 from data import QM9Dataset
 from evaluate import evaluate
 from model import GraphNeuralNetwork
+from profiling import TrainingProfiler, timing_checkpoint
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -110,9 +111,9 @@ def train(cfg: DictConfig) -> None:
     print(cfg)
 
     run = _init_wandb(cfg)
-
-    logger.info("Loading QM9 dataset...")
-    dataset: Dataset = QM9Dataset(cfg.training.data_path)
+    with timing_checkpoint("Load dataset", enabled=profile):
+      logger.info("Loading QM9 dataset...")
+      dataset: Dataset = QM9Dataset(cfg.training.data_path)
 
     # Apply normalization transform
     dataset.transform = NormalizeScale()
@@ -163,6 +164,8 @@ def train(cfg: DictConfig) -> None:
         cfg.training.learning_rate,
         patience,
     )
+    profiler = TrainingProfiler(enabled=profile, output_dir=Path(f"profiling_results/{profiler_run_dir}"))
+
 
     # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
@@ -198,7 +201,10 @@ def train(cfg: DictConfig) -> None:
         if patience_counter >= patience:
             logger.info("Early stopping triggered at epoch %d (best_val_loss=%.6f)", epoch, best_val_loss)
             break
-
+            
+        profiler.step()
+  profiler.finalize()
+  
     # Load best model and evaluate on test set
     best_model_path = model_dir / "best_model.pt"
 

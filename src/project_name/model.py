@@ -31,9 +31,7 @@ class GraphNeuralNetwork(nn.Module):
 
         self.initial_embedding = nn.Linear(num_node_features, hidden_dim)
 
-        self.conv_layers = nn.ModuleList(
-            [GraphConv(hidden_dim, hidden_dim) for _ in range(num_layers)]
-        )
+        self.conv_layers = nn.ModuleList([GraphConv(hidden_dim, hidden_dim) for _ in range(num_layers)])
 
         self.pool = global_mean_pool
 
@@ -87,4 +85,3 @@ if __name__ == "__main__":
     output = model(data)
     print(f"Output shape: {output.shape}")
     print(f"Output value: {output.item():.4f}")
-
