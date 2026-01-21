@@ -1,6 +1,6 @@
 import json
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import torch
@@ -104,13 +104,13 @@ def save_prediction_to_gcp(node_features: list[list[float]], edge_index: list[li
     """Save the prediction results to GCP bucket."""
     client = storage.Client()
     bucket = client.bucket(PRED_FOLDER)
-    time = datetime.now(tz=datetime.UTC).isoformat()
+    time = datetime.now(tz=timezone.utc).isoformat()
     # Prepare prediction data
     data = {
         "node_features": node_features,
         "edge_index": edge_index,
         "prediction": outputs,
-        "timestamp": datetime.now(tz=datetime.UTC).isoformat(),
+        "timestamp": time,
     }
     blob = bucket.blob(f"predictions/{time}.json")
     blob.upload_from_string(json.dumps(data))
