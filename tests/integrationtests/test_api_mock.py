@@ -13,16 +13,16 @@ client = TestClient(app)
 
 
 class TestRoot:
-    """Test health check endpoint."""
+    """Test root endpoint."""
 
-    def test_health_check_returns_healthy(self):
-        """Test that health check returns status 200 with healthy status."""
+    def test_root_check_returns_healthy(self):
+        """Test that root check returns status 200 with healthy status."""
         response = client.get("/")
         assert response.status_code == 200
         assert response.json() == {"status": "healthy"}
 
-    def test_health_check_response_structure(self):
-        """Test health check response has correct structure."""
+    def test_root_check_response_structure(self):
+        """Test root check response has correct structure."""
         response = client.get("/")
         data = response.json()
         assert "status" in data

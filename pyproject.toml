@@ -33,6 +33,7 @@ dependencies = [
     "wandb>=0.24.0",
     "httpx>=0.28.1",
     "locust>=2.43.1",
+    "requests>=2.32.5",
 ]
 
 [dependency-groups]
