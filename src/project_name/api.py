@@ -1,9 +1,12 @@
+import json
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 
 import torch
+from google.cloud import storage
 from torch_geometric.data import Data
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel, field_validator
 
 from project_name.model import GraphNeuralNetwork
@@ -42,7 +45,7 @@ class PredictionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     """Prediction output."""
 
-    prediction: float
+    prediction: list[float]
 
 
 # Inference Service
@@ -64,19 +67,20 @@ class InferenceService:
         self,
         node_features: list[list[float]],
         edge_index: list[list[int]],
-    ) -> float:
+    ) -> list[float]:
         """Generate prediction."""
         with torch.no_grad():
             x = torch.tensor(node_features, dtype=torch.float32).to(self.device)
             edge_idx = torch.tensor(edge_index, dtype=torch.long).to(self.device)
             data = Data(x=x, edge_index=edge_idx)
             output = self.model(data)
-            return float(output.squeeze().cpu())
+            return [float(output.squeeze().cpu())]
 
 
 # Global service instance
 service: InferenceService | None = None
-FOLDER = "/gcs/models/"
+MODEL_FOLDER = "/gcs/models/"
+PRED_FOLDER = "/gcs/predictions/"
 
 
 @asynccontextmanager
@@ -84,12 +88,33 @@ async def lifespan(app: FastAPI):
     """Load model on startup."""
     global service
     model_path = "best_model.pt"
-    service = InferenceService(FOLDER + model_path)
+    service = InferenceService(MODEL_FOLDER + model_path)
+
     yield
+
+    del service
 
 
 # FastAPI App
 app = FastAPI(title="Molecule Prediction API", lifespan=lifespan)
+
+
+# Save prediction results to GCP
+def save_prediction_to_gcp(node_features: list[list[float]], edge_index: list[list[int]], outputs: list[float]):
+    """Save the prediction results to GCP bucket."""
+    client = storage.Client()
+    bucket = client.bucket(PRED_FOLDER)
+    time = datetime.now(tz=datetime.UTC).isoformat()
+    # Prepare prediction data
+    data = {
+        "node_features": node_features,
+        "edge_index": edge_index,
+        "prediction": outputs,
+        "timestamp": datetime.now(tz=datetime.UTC).isoformat(),
+    }
+    blob = bucket.blob(f"prediction_{time}.json")
+    blob.upload_from_string(json.dumps(data))
+    print("Prediction saved to GCP bucket.")
 
 
 @app.get("/")
@@ -99,7 +124,7 @@ def health_check():
 
 
 @app.post("/predict", response_model=PredictionResponse)
-def predict(request: PredictionRequest):
+def predict(request: PredictionRequest, background_tasks: BackgroundTasks):
     """Generate prediction."""
     if service is None:
         raise HTTPException(status_code=503, detail="Model not ready")
@@ -109,6 +134,7 @@ def predict(request: PredictionRequest):
             request.node_features,
             request.edge_index,
         )
+        background_tasks.add_task(save_prediction_to_gcp, request.node_features, request.edge_index, prediction)
         return PredictionResponse(prediction=prediction)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
