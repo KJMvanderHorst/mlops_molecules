@@ -80,7 +80,7 @@ class InferenceService:
 # Global service instance
 service: InferenceService | None = None
 MODEL_FOLDER = "/gcs/models/"
-PRED_FOLDER = "/gcs/predictions/"
+PRED_FOLDER = "molecules_bucket"
 
 
 @asynccontextmanager
@@ -112,7 +112,7 @@ def save_prediction_to_gcp(node_features: list[list[float]], edge_index: list[li
         "prediction": outputs,
         "timestamp": datetime.now(tz=datetime.UTC).isoformat(),
     }
-    blob = bucket.blob(f"prediction_{time}.json")
+    blob = bucket.blob(f"predictions/{time}.json")
     blob.upload_from_string(json.dumps(data))
     print("Prediction saved to GCP bucket.")
 
