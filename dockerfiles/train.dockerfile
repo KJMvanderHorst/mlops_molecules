@@ -4,16 +4,18 @@ RUN apt update && \
     apt install --no-install-recommends -y build-essential gcc && \
     apt clean &&  rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
+
 COPY uv.lock uv.lock
 COPY pyproject.toml pyproject.toml
+COPY README.md README.md
+COPY LICENSE LICENSE
 COPY src/ src/
-COPY .dvc .dvc
-COPY data.dvc data.dvc
-COPY .dvcignore .dvcignore
+COPY configs/ configs/
 
-WORKDIR /
 ENV UV_LINK_MODE=copy
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --dev --locked --no-install-project
+RUN uv sync --dev --locked --no-install-project
 
-# Don't pull data during build - pull it at runtime when git is available
-ENTRYPOINT ["sh", "-c", "uv run --no-project dvc pull data.dvc && uv run --no-project src/project_name/train.py"]
+# Use mounted GCS filesystem for data access
+# Data is mounted at /gcs/<bucket-name> by Vertex AI
+ENTRYPOINT ["uv", "run", "src/project_name/train.py"]

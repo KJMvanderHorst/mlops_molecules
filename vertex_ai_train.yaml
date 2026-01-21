@@ -1,0 +1,46 @@
+steps:
+  - name: "alpine"
+    id: "Replace values in the Vertex job spec"
+    entrypoint: "sh"
+    args:
+      - "-c"
+      - |
+        set -eu
+        apk add --no-cache gettext
+
+        test -f "${_VERTEX_TRAIN_CONFIG}"
+
+        # IMPORTANT: avoid writing the literal WANDB_API_KEY token in this file,
+        # otherwise Cloud Build tries to treat it as a build substitution.
+        export WANDB_API_KEY
+        envsubst < "${_VERTEX_TRAIN_CONFIG}" > "${_VERTEX_TRAIN_CONFIG}.tmp"
+        mv "${_VERTEX_TRAIN_CONFIG}.tmp" "${_VERTEX_TRAIN_CONFIG}"
+    secretEnv: ["WANDB_API_KEY"]
+
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "Train on Vertex AI"
+    waitFor: ["Replace values in the Vertex job spec"]
+    args:
+      [
+        "ai",
+        "custom-jobs",
+        "create",
+        "--quiet",
+        "--region",
+        "europe-west1",
+        "--display-name",
+        "example-mlops-job",
+        "--config",
+        "${_VERTEX_TRAIN_CONFIG}",
+      ]
+
+substitutions:
+  _VERTEX_TRAIN_CONFIG: "configs/vertex/job.yaml"
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/mlops-molecules/secrets/WANDB_API_KEY/versions/latest
+      env: "WANDB_API_KEY"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

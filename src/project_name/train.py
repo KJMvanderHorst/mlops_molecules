@@ -20,6 +20,7 @@ from data import QM9Dataset
 from evaluate import evaluate
 from model import GraphNeuralNetwork
 from profiling import TrainingProfiler, timing_checkpoint
+from utils import get_data_path
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -28,6 +29,9 @@ logger = logging.getLogger(__name__)
 
 # Constants
 LOG_INTERVAL = 10
+
+# Determine config path - works both locally and in container
+_CONFIG_PATH = str(Path(__file__).parent.parent.parent / "configs")
 
 
 def _init_wandb(cfg: DictConfig) -> wandb.run.Run | None:
@@ -46,11 +50,12 @@ def _init_wandb(cfg: DictConfig) -> wandb.run.Run | None:
         run = wandb.init(
             project=cfg.wandb.get("project", "mlops-molecules"),
             config=OmegaConf.to_container(cfg, resolve=True),
+            settings=wandb.Settings(git_root=None),  # Disable git detection for containerized environments
         )
         logger.info("Initialized wandb run: %s", run.id)
         return run
     except Exception as e:
-        logger.warning("Failed to initialize wandb (%s). Running with wandb disabled.", e)
+        logger.warning("Failed to initialize wandb: %s", e, exc_info=True)
         os.environ["WANDB_MODE"] = "disabled"
         return None
 
@@ -97,7 +102,7 @@ def _get_device() -> torch.device:
     return torch.device("cpu")
 
 
-@hydra.main(version_base=None, config_path="../../configs", config_name="config")
+@hydra.main(version_base=None, config_path=_CONFIG_PATH, config_name="config")
 def train(cfg: DictConfig) -> None:
     """Train the GNN model on QM9 dataset.
 
@@ -107,16 +112,27 @@ def train(cfg: DictConfig) -> None:
     device: torch.device = _get_device()
     logger.info("Using device: %s", device)
 
-    model_dir: Path = Path(cfg.training.model_dir)
+    model_dir: Path = get_data_path(
+        cfg.training.model_dir,
+        gcs_bucket=OmegaConf.select(cfg, "training.gcs_bucket"),
+    )
     model_dir.mkdir(parents=True, exist_ok=True)
     print(cfg)
 
     profile: bool = cfg.training.profile
     profiler_run_dir: str = cfg.training.profiler_run_dir
     run = _init_wandb(cfg)
+    if run is not None:
+        logger.info("wandb logging enabled (run: %s)", run.id)
+    else:
+        logger.info("wandb logging disabled")
     with timing_checkpoint("Load dataset", enabled=profile):
         logger.info("Loading QM9 dataset...")
-        dataset: Dataset = QM9Dataset(cfg.training.data_path)
+        data_path = get_data_path(
+            cfg.training.data_path,
+            gcs_bucket=OmegaConf.select(cfg, "training.gcs_bucket"),
+        )
+        dataset: Dataset = QM9Dataset(data_path)
 
     # Apply normalization transform
     dataset.transform = NormalizeScale()
