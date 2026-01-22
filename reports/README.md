@@ -228,6 +228,7 @@ Firstly, we have added docstrings to all the functions in our project. Secondly,
 > Answer:
 
 ---
+We have implemented four main types of tests: unit tests for the model and data, mock tests for the API endpoints, and load tests for the API. The unit tests check model input/output shapes and whether dataloaders work correctly. The API mock tests use patching to simulate services and verify that endpoints return expected responses. Load testing, performed with Locust after deployment, evaluates if the service can handle high request volumes; results are stored as CSV files in GitHub Actions artifacts.
 
 ---
 
@@ -244,7 +245,10 @@ Firstly, we have added docstrings to all the functions in our project. Secondly,
 >
 > Answer:
 
---- question 8 fill here ---
+---
+The coverages for the the tests are as follows: data 16%, model 41%, and api 100%. Code coverage percentages however only include how many lines of code are ran by the tests. This does not indicate how safe our code is. For example with 100% coverage of the api there could still be errors in the case where the tests we wrote did not include every possible combinations of inputs that a user could give. And even though the coverage of data is onlly 16%, we still test all the neccesary functionality. High coverage is helpful but does not guarentee correctness
+
+---
 
 ### Question 9
 
