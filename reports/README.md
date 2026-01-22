@@ -103,7 +103,7 @@ will check the repositories and the code to verify your answers.
 * [ ] Instrument your API with a couple of system metrics (M28)
 * [ ] Setup cloud monitoring of your instrumented application (M28)
 * [ ] Create one or more alert systems in GCP to alert you if your app is not behaving correctly (M28)
-* [ ] If applicable, optimize the performance of your data loading using distributed data loading (M29)
+* [x] If applicable, optimize the performance of your data loading using distributed data loading (M29)
 * [x] If applicable, optimize the performance of your training pipeline by using distributed training (M30)
 * [x] Play around with quantization, compilation and pruning for you trained models to increase inference speed (M31)
 
@@ -525,7 +525,10 @@ The method of debugging is an individual preference, so it depended on the group
 >
 > Answer:
 
---- question 25 fill here ---
+---
+We have made unit tests aswell as load tests for the testing of the api. The unittest run on each commit. They use patch from unittest.mock to replace the actual inference service, allowing us to test the api without needing to load the model. This is useful for quick testing of the api. We used locust for load testing. We have added a task for load testing so we were able to control the load testing configuration using hydra. This allows us to call load testing from github actions while being able to a clean way control the parameters of the load test. Load testing test users that only get the root, users that request prediction of small graphs or edge cases, and users that requestion prediction of larger graphs, and finally users that request prediction with invalid inputs. The results of load testing did not result in any failures. The load testing was always run automatically after the deployment of our service.
+
+---
 
 ### Question 26
 
@@ -592,7 +595,9 @@ The method of debugging is an individual preference, so it depended on the group
 >
 > Answer:
 
---- question 29 fill here ---
+---
+The starting point of the diagram is the local dev setup, we write code which we push to github. This triggers our precommits to make sure we have nice formatting and it runs the mock api and unittests. When a pull request is made to merge a branch into master, the docker images are built and put in a registry in the GCP automatically through github actions. This also updates the cloud run service. After the cloud run service is deployed, the service is automatically load tested using locust, and the output of the load testing is stored in github action artifacts. From the local machine you can train models with wandb, either locally or in vertex ai. To use vertex ai the necessary docker images need to be present in the registry. When a model is trained, the model weights and the training configuration are stored in wandb and the model is added to the registry in wandb. The registry always contains one model with the tag: best_model When a new model is added to the registry it triggers a github workflow which loads the newly trained model and the current best model and compares them. In the case that the newly trained model is the best model it gets the tag best_model and a new github action is triggered. This action downloads this best model from the wandb registry and replaces the current model in the gcp bucket, the model which our cloud run uses, with the new best model. This ensures the model used in our service is always the best one. When users interact with our cloud run service, the input data they provide is stored in a bucket in the cloud. Evidently is used to monitor the distribution of the input data and target values.
+---
 
 ### Question 30
 
