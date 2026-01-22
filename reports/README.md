@@ -263,7 +263,10 @@ The coverages for the the tests are as follows: data 16%, model 41%, and api 100
 >
 > Answer:
 
---- question 9 fill here ---
+---
+In our project we never pushed to master and used branches for every new feature that was added. This was done to make use of github workflows which we started on pull requests such as testing and liting. Branches were not seperated among different group members as when someone struggled someone else could hop into the branch to help. When the feature the branch was meant for was finished we used pull requests to merge this into the master branch, ensuring nobody would add code directly to the master branch. We did not employ code review on pull request but in very big and critical projects this could be helpful ensuring a senior developer oversees all changes which are made to the code. However as this was a relatively small project with a lot of direct collaboration we did not think this was neccesary and would slow us down.
+
+---
 
 ### Question 10
 
@@ -314,7 +317,10 @@ The coverages for the the tests are as follows: data 16%, model 41%, and api 100
 >
 > Answer:
 
---- question 12 fill here ---
+---
+We used hydra to manage all the paramaters used in our experiments. We had one central folder which stored all the config files. We supressed the outputs from hydra, as with wandb it already tracks the entire configuration that was used in training. We used a central config.yaml file with defaults to make it easy to switch between for example training:gnn or training:cnn if applicable As we used tasks with invoke to run training with a specific configuration one can simply run for example `uv run invoke train --training.epochs=40`.
+
+---
 
 ### Question 13
 
@@ -361,7 +367,9 @@ The coverages for the the tests are as follows: data 16%, model 41%, and api 100
 >
 > Answer:
 
---- question 15 fill here ---
+---
+
+---
 
 ### Question 16
 
