@@ -2,6 +2,7 @@ defaults:
   - model: gnn
   - training: standard
   - wandb: default
+  - pruning: default
   - loadtest: loadtest
   - _self_
 

@@ -1,0 +1,4 @@
+pruning:
+  amount: 0.1
+  warmup_batches: 100
+  timed_batches: 500

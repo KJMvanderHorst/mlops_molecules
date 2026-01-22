@@ -5,6 +5,7 @@ gcs_bucket: molecules_bucket
 epochs: 100
 batch_size: 32
 learning_rate: 0.001
+num_workers: 4
 
 target_indices: [4]
 
