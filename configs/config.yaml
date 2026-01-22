@@ -3,6 +3,7 @@ defaults:
   - training: standard
   - wandb: default
   - pruning: default
+  - loadtest: loadtest
   - _self_
 
 seed: 42

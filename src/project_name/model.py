@@ -23,6 +23,8 @@ class GraphNeuralNetwork(nn.Module):
             num_edge_features: Number of edge (bond) features.
             hidden_dim: Number of hidden channels.
             num_layers: Number of GraphConv layers.
+
+
             output_dim: Output dimension (1 for single property regression).
             dropout: Dropout rate for regularization.
         """

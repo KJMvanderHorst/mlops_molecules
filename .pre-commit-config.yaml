@@ -20,9 +20,9 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: uv run pytest tests/
+        entry: uv run pytest tests/integrationtests tests/unittests
         language: system
         types: [python]
-        stages: [commit]
+        stages: [pre-commit]
         pass_filenames: false
         always_run: true

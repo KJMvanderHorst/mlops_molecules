@@ -1,9 +1,6 @@
 name: Unit Tests and Build
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
       - master
@@ -40,7 +37,12 @@ jobs:
           uv run coverage report -m --ignore-errors
   build:
     needs: test
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: >
+      ${{
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.base.ref == 'master' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -55,4 +57,4 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
 
     - name: Submit build
-      run: gcloud builds submit . --config cloudbuild_containers.yaml
+      run: gcloud builds submit . --config cloudbuild.yaml --service-account=projects/mlops-molecules/serviceAccounts/cloud-builder@mlops-molecules.iam.gserviceaccount.com

@@ -1,5 +1,38 @@
 steps:
   - name: "gcr.io/cloud-builders/docker"
+    id: "Build API container image"
+    env:
+      - "DOCKER_BUILDKIT=1"
+    args:
+      [
+        "build",
+        ".",
+        "-t",
+        "europe-west1-docker.pkg.dev/$PROJECT_ID/mlops-molecules/gcp_app:latest",
+        "-f",
+        "dockerfiles/api.dockerfile",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "Push API container image"
+    args:
+      [
+        "push",
+        "europe-west1-docker.pkg.dev/$PROJECT_ID/mlops-molecules/gcp_app:latest",
+      ]
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Deploy to Cloud Run'
+    args: [
+      'run',
+      'deploy',
+      'gcp-app',
+      '--image',
+      'europe-west1-docker.pkg.dev/$PROJECT_ID/mlops-molecules/gcp_app:latest',
+      '--region',
+      'europe-west1',
+      '--platform',
+      'managed',
+    ]
+  - name: "gcr.io/cloud-builders/docker"
     id: "Build container image"
     env:
       - "DOCKER_BUILDKIT=1"
@@ -21,5 +54,6 @@ steps:
       ]
 images:
   - "europe-west1-docker.pkg.dev/$PROJECT_ID/mlops-molecules/train:latest"
+  - "europe-west1-docker.pkg.dev/$PROJECT_ID/mlops-molecules/gcp_app:latest"
 options:
   logging: CLOUD_LOGGING_ONLY
