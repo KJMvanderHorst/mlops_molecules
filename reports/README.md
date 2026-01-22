@@ -168,11 +168,8 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- We used uv for managing dependencies, everytime we had to introduce a new dependency we used uv add
-'dependency name'. This would add the dependency to the pyproject.toml file. To get a complete copy of our development enviroment a person can run
-```bash
-uv sync
-```
+--- We used uv for managing dependencies, everytime we had to introduce a new dependency we used `uv add
+<dependency name>`. This would add the dependency to the pyproject.toml file. To get a complete copy of our development enviroment a person can run `uv sync`
 ---
 
 ### Question 5
