@@ -651,4 +651,7 @@ Overall the biggest struggles of the project were related to using cloud service
 > *We have used ChatGPT to help debug our code. Additionally, we used GitHub Copilot to help write some of our code.*
 > Answer:
 
---- question 31 fill here ---
+---
+Student s252994 was in charge of making the docker images, making a profiler, writing scripts for API, deploying them in the cloud, and building infrastructure for monitoring of data drifting.
+
+---
