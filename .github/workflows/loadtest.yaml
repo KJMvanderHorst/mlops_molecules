@@ -15,7 +15,7 @@ jobs:
       SERVICE_NAME: gcp-app
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
