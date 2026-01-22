@@ -45,7 +45,7 @@ dev = [
     "mkdocs-material==9.4.6",
     "mkdocs==1.6.1",
     "pre-commit==4.1.0",
-    "pytest==8.3.4",
+    "pytest==9.0.2",
     "ruff==0.9.10",
     "mkdocstrings[python]==0.25.2",
     "torch-tb-profiler>=0.4.3",
