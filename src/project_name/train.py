@@ -10,7 +10,6 @@ import torch
 import torch.nn.functional as F
 import wandb
 
-
 from omegaconf import DictConfig, OmegaConf
 from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
@@ -21,6 +20,12 @@ from evaluate import evaluate
 from model import GraphNeuralNetwork
 from profiling import TrainingProfiler, timing_checkpoint
 from utils import get_data_path
+
+import multiprocessing
+
+def _num_workers(cfg: DictConfig) -> int:
+    cores = multiprocessing.cpu_count()
+    return min(4, cores)
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -150,9 +155,36 @@ def train(cfg: DictConfig) -> None:
     )
 
     # Create data loaders
-    train_loader: DataLoader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=True)
-    val_loader: DataLoader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, shuffle=False)
-    test_loader: DataLoader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, shuffle=False)
+    # Create data loaders (parallel loading)
+    workers = _num_workers(cfg)
+    logger.info("DataLoader num_workers=%d", workers)
+
+    train_loader: DataLoader = DataLoader(
+        train_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=True,
+        num_workers=workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=(workers > 0),
+    )
+
+    val_loader: DataLoader = DataLoader(
+        val_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=False,
+        num_workers=workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=(workers > 0),
+    )
+
+    test_loader: DataLoader = DataLoader(
+        test_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=False,
+        num_workers=workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=(workers > 0),
+    )
 
     logger.info("Dataset split - Train: %d, Val: %d, Test: %d", len(train_dataset), len(val_dataset), len(test_dataset))
 
