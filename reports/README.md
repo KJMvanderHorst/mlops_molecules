@@ -625,7 +625,10 @@ Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in to
 >
 > Answer:
 
---- question 30 fill here ---
+---
+Overall the biggest struggles of the project were related to using cloud services. One of the tasks we spent most time on was pushing the docker images to the Artifact Registry using cloudbuild.yaml file. After several hours of debugging and asking a TA for help we came to the conclusion that because of the order in which we did things in the Cloud being different to what we were doing in the exercises a necessary service account was not automatically created. We fixed it simply by making a service account by hand and giving it right permissions. Another this was also making a report on data drifting, as it required connecting multiple parts of the course: Cloud deployment, interacting with buckets in the cloud and making an API that would run this. The reason for this taking so much time was that building Docker images and deploying them to the cloud simply takes a lot of time. At the beginning we also struggled with having our uv.lock file in a correct format. This was due to the fact that at first there were many thing we were doing in parallel and we were adding a lot of packages to our enviroment, which resulted in a lot of merged conflicts which were hard to resolve. Apart from those things, the rest of the tasks we accomplished went fairly smoothly.
+
+---
 
 ### Question 31
 
