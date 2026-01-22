@@ -18,6 +18,7 @@ class PredictionRequest(BaseModel):
 
     node_features: list[list[float]]
     edge_index: list[list[int]]
+    save_prediction: bool = True
 
     @field_validator("node_features")
     def validate_node_features(cls, v: list[list[float]]) -> list[list[float]]:
@@ -112,7 +113,7 @@ def save_prediction_to_gcp(node_features: list[list[float]], edge_index: list[li
         "prediction": outputs,
         "timestamp": time,
     }
-    blob = bucket.blob(f"predictions/{time}.json")
+    blob = bucket.blob(f"predictions/prediction_{time}.json")
     blob.upload_from_string(json.dumps(data))
     print("Prediction saved to GCP bucket.")
 
@@ -134,7 +135,8 @@ def predict(request: PredictionRequest, background_tasks: BackgroundTasks):
             request.node_features,
             request.edge_index,
         )
-        background_tasks.add_task(save_prediction_to_gcp, request.node_features, request.edge_index, prediction)
+        if request.save_prediction:
+            background_tasks.add_task(save_prediction_to_gcp, request.node_features, request.edge_index, prediction)
         return PredictionResponse(prediction=prediction)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
