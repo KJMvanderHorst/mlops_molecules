@@ -711,5 +711,6 @@ Overall the biggest struggles of the project were related to using cloud service
 ---
 
 Student s252994 was in charge of making the docker images, making a profiler, writing scripts for API, deploying them in the cloud, and building infrastructure for monitoring of data drifting.
+Student s252012 contributed by setting up Vertex AI, W&DB, half of CI, the Unit Tests. Good Coding Practices, Distributed Data Loading, Distributed Loading, Pruning, and Quantization.
 
 ---
