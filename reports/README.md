@@ -390,7 +390,7 @@ We made use of config files with Hydra, which helped us to retain information ab
 
 ---
 
-[sweep](figures/sweep.png).
+![sweep](figures/sweep.png).
 
 - loss/train: training objective necessary for early stopping and training. (detect underfitting etc.)
 - loss/val: validation performance is the main signal for generalization. (detect overfitting etc.)
@@ -489,7 +489,7 @@ We have used Secrets Management to upload our API keys and connect them for exam
 >
 > Answer:
 
---- [bucket1](figures/bucket1.png) ---
+--- ![bucket1](figures/bucket1.png) ---
 
 ### Question 20
 
@@ -498,7 +498,7 @@ We have used Secrets Management to upload our API keys and connect them for exam
 >
 > Answer:
 
---- [artifact](figures/artifact.png) ---
+--- ![artifact](figures/artifact.png) ---
 
 ### Question 21
 
@@ -507,7 +507,7 @@ We have used Secrets Management to upload our API keys and connect them for exam
 >
 > Answer:
 
---- [cloud_history](figures/cloud_history.png) ---
+--- ![cloud_history](figures/cloud_history.png) ---
 
 ### Question 22
 
@@ -669,7 +669,7 @@ Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in to
 > Answer:
 
 ---
-[overview](figures/overview.jpg)
+![overview](figures/overview.jpg)
 The starting point of the diagram is the local dev setup, we write code which we push to github. This triggers our precommits to make sure we have nice formatting and it runs the mock api and unittests. When a pull request is made to merge a branch into master, the docker images are built and put in a registry in the GCP automatically through github actions. This also updates the cloud run service. After the cloud run service is deployed, the service is automatically load tested using locust, and the output of the load testing is stored in github action artifacts. From the local machine you can train models with wandb, either locally or in vertex ai. To use vertex ai the necessary docker images need to be present in the registry. When a model is trained, the model weights and the training configuration are stored in wandb and the model is added to the registry in wandb. The registry always contains one model with the tag: best_model When a new model is added to the registry it triggers a github workflow which loads the newly trained model and the current best model and compares them. In the case that the newly trained model is the best model it gets the tag best_model and a new github action is triggered. This action downloads this best model from the wandb registry and replaces the current model in the gcp bucket, the model which our cloud run uses, with the new best model. This ensures the model used in our service is always the best one. When users interact with our cloud run service, the input data they provide is stored in a bucket in the cloud. Evidently is used to monitor the distribution of the input data and target values.
 
 ---
@@ -712,5 +712,6 @@ Overall the biggest struggles of the project were related to using cloud service
 
 Student s252994 was in charge of making the docker images, making a profiler, writing scripts for API, deploying them in the cloud, and building infrastructure for monitoring of data drifting. Also added the tasks.py.
 Student s254301 was in charge of setting up the repository with ccds, the basic training, evaluate and data scripts. Setting up the google cloud, the bucket, the neccesary service accounts, dvc, configuration management, CI/CD, api testing, and documentation.
-
+Student s252012 contributed by setting up Vertex AI, W&DB, half of CI, the Unit Tests. Good Coding Practices, Distributed Data Loading, Distributed Loading, Pruning, and Quantization.
+All members contributed to the code with constant collababoration. The split mentioned above indicates only what people mainly worked on. We have used ChatGPT and Github Copilot to help debug and write some of the code.
 ---
