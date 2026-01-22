@@ -41,12 +41,11 @@ jobs:
         env:
           WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
         run: |
-            uv run python scripts/download_model.py --artifact-path "${{ github.event.client_payload.artifact_path || inputs.artifact_path }}" --output-dir model_dir
-          "
+          uv run python src/project_name/download_model.py --artifact-path "${{ github.event.client_payload.artifact_path || inputs.artifact_path }}" --output-dir model_dir
 
       - name: Upload model to GCS
         run: |
-          gsutil -m rsync -r model_dir gs://molecules_bucket/models/
+          gsutil cp model_dir/* gs://molecules_bucket/models/best_model.pt
 
       - name: Log deployment
         run: |
