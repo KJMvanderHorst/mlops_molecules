@@ -575,7 +575,10 @@ During this course we did manage to implement a type of monitoring which is spec
 >
 > Answer:
 
---- question 27 fill here ---
+---
+Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in total throughout the whole course for the purpose of project developement. The service costing the most was Vertex AI which we used for model training, which was expected as it ran for the most ammount of time and also consumed resources like GPU which are more expensive, than for example storage. Working in the cloud was painfull, as it slowed the process of developement substantially. On the other hand, it enabled us to use previously unreachable resources such as GPU access.
+
+---
 
 ### Question 28
 
