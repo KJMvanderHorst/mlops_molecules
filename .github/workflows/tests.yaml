@@ -54,7 +54,7 @@ jobs:
         credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
+      uses: google-github-actions/setup-gcloud@v3
 
     - name: Submit build
       run: gcloud builds submit . --config cloudbuild.yaml --service-account=projects/mlops-molecules/serviceAccounts/cloud-builder@mlops-molecules.iam.gserviceaccount.com
