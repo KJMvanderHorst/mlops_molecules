@@ -47,11 +47,7 @@ jobs:
         env:
           DEPLOYED_URL: ${{ env.DEPLOYED_URL }}
         run: |
-          mkdir -p locust-results
-          uv run locust -f tests/performance_tests/load_test_api.py \
-            --headless -u 50 -r 5 --run-time 2m \
-            --host="$DEPLOYED_URL" \
-            --csv=locust-results/results
+          uv run invoke loadtest --host "$DEPLOYED_URL"
 
       - name: Upload locust results
         if: always()

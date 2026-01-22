@@ -5,11 +5,19 @@ This file uses unittests.mock patch to to not rely on the actual model.
 
 from unittest.mock import patch
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from project_name.api import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _disable_gcs_background(monkeypatch):
+    """Disable GCS side effects during tests."""
+    monkeypatch.setattr("project_name.api.save_prediction_to_gcp", lambda *args, **kwargs: None)
 
 
 class TestRoot:
@@ -43,13 +51,13 @@ class TestPredictEndpoint:
     def test_predict_valid_request(self):
         """Test predict endpoint with valid input."""
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = 2.5
+            mock_service.predict.return_value = [2.5]
             response = client.post("/predict", json=self.get_valid_request())
             assert response.status_code == 200
             data = response.json()
             assert "prediction" in data
-            assert isinstance(data["prediction"], float)
-            assert data["prediction"] == 2.5
+            assert isinstance(data["prediction"], list)
+            assert data["prediction"] == [2.5]
 
     def test_predict_service_not_ready(self):
         """Test predict endpoint when service is None (not ready)."""
@@ -88,14 +96,14 @@ class TestPredictEndpoint:
     def test_predict_calls_service(self):
         """Test that predict endpoint calls the inference service."""
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = 1.23
+            mock_service.predict.return_value = [1.23]
             client.post("/predict", json=self.get_valid_request())
             mock_service.predict.assert_called_once()
 
     def test_predict_passes_correct_data_to_service(self):
         """Test that predict passes correct data to service."""
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = 1.0
+            mock_service.predict.return_value = [1.0]
             request = self.get_valid_request()
             client.post("/predict", json=request)
             mock_service.predict.assert_called_once_with(
@@ -130,7 +138,7 @@ class TestEdgeCases:
             "edge_index": [[i, i + 1] for i in range(99)] + [[i + 1, i] for i in range(99)],
         }
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = 3.14
+            mock_service.predict.return_value = [3.14]
             response = client.post("/predict", json=large_request)
             assert response.status_code == 200
 
@@ -141,7 +149,7 @@ class TestEdgeCases:
             "edge_index": [[0, 1], [1, 2]],
         }
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = -0.5
+            mock_service.predict.return_value = [-0.5]
             response = client.post("/predict", json=request)
             assert response.status_code == 200
 
@@ -152,7 +160,7 @@ class TestEdgeCases:
             "edge_index": [[0, 1], [1, 2]],
         }
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = 0.0
+            mock_service.predict.return_value = [0.0]
             response = client.post("/predict", json=request)
             assert response.status_code == 200
 
@@ -160,7 +168,7 @@ class TestEdgeCases:
         """Test that multiple requests with same input return consistent predictions."""
         request = self.get_valid_request()
         with patch("project_name.api.service") as mock_service:
-            mock_service.predict.return_value = 1.5
+            mock_service.predict.return_value = [1.5]
             response1 = client.post("/predict", json=request)
             response2 = client.post("/predict", json=request)
             assert response1.status_code == 200
