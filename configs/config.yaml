@@ -2,6 +2,7 @@ defaults:
   - model: gnn
   - training: standard
   - wandb: default
+  - loadtest: loadtest
   - _self_
 
 seed: 42
