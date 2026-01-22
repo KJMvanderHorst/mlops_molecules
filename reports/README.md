@@ -168,8 +168,9 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- We used uv for managing dependencies, everytime we had to introduce a new dependency we used `uv add
-<dependency name>`. This would add the dependency to the pyproject.toml file. To get a complete copy of our development enviroment a person can run `uv sync`
+---
+We used uv for managing dependencies, everytime we had to introduce a new dependency we used `uv add <dependency name>`. This will automatically updated the pyproject.toml aswell as the uv.lock file for exact version pinning. For a new person to get our exact development enviroment one would need to firstly install uv, secondly clone the repository and navigate to it, and finally run `uv sync` to create a virtual enviroment and install all dependencies as specified in the lock file. In order to run scripts one then would need to use `uv run`.
+
 ---
 
 ### Question 5
@@ -186,7 +187,10 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 5 fill here ---
+---
+We have filled out the dockerfiles, docs, models, src, and tests folder. The models folder contains only one model to test out the training locally but not for storing and versioning models. src contains all the actualy python code used in the project. We have removed only the notebooks folder as we did not use any jupyter notebooks in this project. Beyond the template we have also divided the tests folder deeper into three seperate folders: integrationtests, unittests, and performance_tests. This was done as we run some tests on every push through precommits, but the performance_tests we want to run only after a successful deployment of our service. Other than this we did not deviate from from the template.
+
+---
 
 ### Question 6
 
@@ -201,7 +205,10 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 6 fill here ---
+---
+Firstly, we have added docstrings to all the functions in our project. Secondly, we have also used typing in all the functions to ensure functions only run when provided with the correct input tuypes. For linting and formatting we have used ruff, in our precomit hooks we have included `ruff format --check` as well as `ruff check` to ensure we comply with formatting and it is consistent across the whole project. We do not currently employ a typechecker such as mypy in the precommit. In large projects these practices are important in order to keep the codebase easier to maintain and update, and more importantly prevent bugs.
+
+---
 
 ## Version control
 
@@ -220,7 +227,9 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- question 7 fill here ---
+---
+
+---
 
 ### Question 8
 
