@@ -2,7 +2,6 @@ program: src/project_name/train.py
 
 name: qm9_gnn_sweep
 project: mlops_molecules
-entity: hoboldi
 
 method: bayes
 
