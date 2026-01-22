@@ -2,7 +2,7 @@ name: Deploy Best Model to GCP
 
 on:
   repository_dispatch:
-    types: [best_model_upload]
+    types: [best_model_updated]
   workflow_dispatch:
     inputs:
       artifact_path:
