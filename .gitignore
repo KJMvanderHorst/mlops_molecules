@@ -11,7 +11,7 @@ manual_test/
 
 outputs/*
 models/*
-wandb/*
+/wandb/
 
 .env
 

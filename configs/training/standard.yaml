@@ -1,5 +1,6 @@
 data_path: data
 model_dir: models
+gcs_bucket: molecules_bucket
 
 epochs: 100
 batch_size: 32
