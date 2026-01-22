@@ -972,10 +972,7 @@
 
             <details class="quote">
               <summary>Source code in <code>src/project_name/train.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
 <span class="normal">112</span>
@@ -1202,7 +1199,12 @@
 <span class="normal">333</span>
 <span class="normal">334</span>
 <span class="normal">335</span>
-<span class="normal">336</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@hydra</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">version_base</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="n">_CONFIG_PATH</span><span class="p">,</span> <span class="n">config_name</span><span class="o">=</span><span class="s2">&quot;config&quot;</span><span class="p">)</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@hydra</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">version_base</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="n">_CONFIG_PATH</span><span class="p">,</span> <span class="n">config_name</span><span class="o">=</span><span class="s2">&quot;config&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Train the GNN model on QM9 dataset.</span>
 
@@ -1325,7 +1327,12 @@
         <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="n">LOG_INTERVAL</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">epoch</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="s2">&quot;Epoch </span><span class="si">%3d</span><span class="s2"> | Train Loss: </span><span class="si">%.6f</span><span class="s2"> | Val MSE: </span><span class="si">%.6f</span><span class="s2"> | Val RMSE: </span><span class="si">%.6f</span><span class="s2"> | Val MAE: </span><span class="si">%.6f</span><span class="s2"> | Val R2: </span><span class="si">%.6f</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">epoch</span><span class="p">,</span> <span class="n">train_loss</span><span class="p">,</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;mse&quot;</span><span class="p">],</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;rmse&quot;</span><span class="p">],</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;mae&quot;</span><span class="p">],</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;r2&quot;</span><span class="p">]</span>
+                <span class="n">epoch</span><span class="p">,</span>
+                <span class="n">train_loss</span><span class="p">,</span>
+                <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;mse&quot;</span><span class="p">],</span>
+                <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;rmse&quot;</span><span class="p">],</span>
+                <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;mae&quot;</span><span class="p">],</span>
+                <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;r2&quot;</span><span class="p">],</span>
             <span class="p">)</span>
 
         <span class="n">improved</span> <span class="o">=</span> <span class="n">val_loss</span> <span class="o">&lt;</span> <span class="n">best_val_loss</span>
@@ -1346,16 +1353,13 @@
                 <span class="p">{</span>
                     <span class="s2">&quot;epoch&quot;</span><span class="p">:</span> <span class="n">epoch</span><span class="p">,</span>
                     <span class="s2">&quot;loss/train&quot;</span><span class="p">:</span> <span class="n">train_loss</span><span class="p">,</span>
-
                     <span class="c1"># keep your existing val loss key if you want</span>
                     <span class="s2">&quot;loss/val&quot;</span><span class="p">:</span> <span class="n">val_loss</span><span class="p">,</span>
-
                     <span class="c1"># add full validation metrics</span>
                     <span class="s2">&quot;val/mse&quot;</span><span class="p">:</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;mse&quot;</span><span class="p">],</span>
                     <span class="s2">&quot;val/rmse&quot;</span><span class="p">:</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;rmse&quot;</span><span class="p">],</span>
                     <span class="s2">&quot;val/mae&quot;</span><span class="p">:</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;mae&quot;</span><span class="p">],</span>
                     <span class="s2">&quot;val/r2&quot;</span><span class="p">:</span> <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;r2&quot;</span><span class="p">],</span>
-
                     <span class="s2">&quot;early_stopping/patience_counter&quot;</span><span class="p">:</span> <span class="n">patience_counter</span><span class="p">,</span>
                     <span class="s2">&quot;early_stopping/best_val_loss&quot;</span><span class="p">:</span> <span class="n">best_val_loss</span><span class="p">,</span>
                 <span class="p">}</span>
@@ -1388,9 +1392,9 @@
     <span class="c1"># Save final model</span>
     <span class="n">final_model_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">model_dir</span> <span class="o">/</span> <span class="s2">&quot;final_model.pt&quot;</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">DataParallel</span><span class="p">)</span> <span class="k">else</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span>
-    <span class="n">final_model_path</span><span class="p">,</span>
-    <span class="p">)</span>  
+        <span class="n">model</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">DataParallel</span><span class="p">)</span> <span class="k">else</span> <span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span>
+        <span class="n">final_model_path</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Training complete. Models saved to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">model_dir</span><span class="p">)</span>
 
     <span class="c1"># wandb: final logs</span>
@@ -1398,7 +1402,7 @@
         <span class="c1"># Log full test metrics (assumes you computed `test_metrics` as shown before)</span>
         <span class="n">wandb</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">&quot;loss/test&quot;</span><span class="p">:</span> <span class="n">test_loss</span><span class="p">,</span>              <span class="c1"># keep compatibility (MSE)</span>
+                <span class="s2">&quot;loss/test&quot;</span><span class="p">:</span> <span class="n">test_loss</span><span class="p">,</span>  <span class="c1"># keep compatibility (MSE)</span>
                 <span class="s2">&quot;test/mse&quot;</span><span class="p">:</span> <span class="n">test_metrics</span><span class="p">[</span><span class="s2">&quot;mse&quot;</span><span class="p">],</span>
                 <span class="s2">&quot;test/rmse&quot;</span><span class="p">:</span> <span class="n">test_metrics</span><span class="p">[</span><span class="s2">&quot;rmse&quot;</span><span class="p">],</span>
                 <span class="s2">&quot;test/mae&quot;</span><span class="p">:</span> <span class="n">test_metrics</span><span class="p">[</span><span class="s2">&quot;mae&quot;</span><span class="p">],</span>
@@ -1456,9 +1460,7 @@
 
             <details class="quote">
               <summary>Source code in <code>src/project_name/train.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">71</span>
 <span class="normal">72</span>
 <span class="normal">73</span>
 <span class="normal">74</span>
@@ -1482,7 +1484,9 @@
 <span class="normal">92</span>
 <span class="normal">93</span>
 <span class="normal">94</span>
-<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">train_epoch</span><span class="p">(</span>
+<span class="normal">95</span>
+<span class="normal">96</span>
+<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">train_epoch</span><span class="p">(</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">GraphNeuralNetwork</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
     <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">,</span>
@@ -2254,15 +2258,15 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No prunable fully-connected (nn.Linear) layers found.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;modules_pruned&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;global_sparsity&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">pname</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pruned_modules</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">pname</span> <span class="ow">in</span> <span class="n">pruned_modules</span><span class="p">:</span>
         <span class="n">prune</span><span class="o">.</span><span class="n">l1_unstructured</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">pname</span><span class="p">,</span> <span class="n">amount</span><span class="o">=</span><span class="n">amount</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">pname</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pruned_modules</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">pname</span> <span class="ow">in</span> <span class="n">pruned_modules</span><span class="p">:</span>
         <span class="n">prune</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">pname</span><span class="p">)</span>
 
     <span class="n">total_elems</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">zero_elems</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">pname</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pruned_modules</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">pname</span> <span class="ow">in</span> <span class="n">pruned_modules</span><span class="p">:</span>
         <span class="n">w</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">pname</span><span class="p">)</span>
         <span class="n">total_elems</span> <span class="o">+=</span> <span class="n">w</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
         <span class="n">zero_elems</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">((</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
@@ -2685,7 +2689,11 @@ torch.ao dynamic quantization API otherwise.</p>
 <span class="normal">144</span>
 <span class="normal">145</span>
 <span class="normal">146</span>
-<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">quantize_full_model</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">quantize_full_model</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Apply weight-only INT8 quantization to *all* linear layers in the model, including those</span>
 <span class="sd">    nested inside GraphConv blocks. Uses torchao when available and falls back to the</span>
@@ -2697,6 +2705,7 @@ torch.ao dynamic quantization API otherwise.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s2">&quot;torch_ao_dynamic&quot;</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">torch.ao.quantization</span><span class="w"> </span><span class="kn">import</span> <span class="n">quantize_dynamic</span>  <span class="c1"># older weights-only API</span>
+
         <span class="k">return</span> <span class="n">quantize_dynamic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">{</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">},</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">qint8</span><span class="p">)</span>
 
     <span class="c1"># default: torchao</span>
@@ -2706,10 +2715,13 @@ torch.ao dynamic quantization API otherwise.</p>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;torchao not available (</span><span class="si">%s</span><span class="s2">). Falling back to torch.ao.quantization.quantize_dynamic.&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">torch.ao.quantization</span><span class="w"> </span><span class="kn">import</span> <span class="n">quantize_dynamic</span>
+
         <span class="k">return</span> <span class="n">quantize_dynamic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">{</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">},</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">qint8</span><span class="p">)</span>
 
     <span class="c1"># torchao quantize_ is inplace; returns None or model depending on version</span>
-    <span class="n">quantize_</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Int8WeightOnlyConfig</span><span class="p">())</span>  <span class="c1">#  [oai_citation:3‡PyTorch Documentation](https://docs.pytorch.org/ao/stable/generated/torchao.quantization.quantize_.html)</span>
+    <span class="n">quantize_</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">Int8WeightOnlyConfig</span><span class="p">()</span>
+    <span class="p">)</span>  <span class="c1">#  [oai_citation:3‡PyTorch Documentation](https://docs.pytorch.org/ao/stable/generated/torchao.quantization.quantize_.html)</span>
     <span class="k">return</span> <span class="n">model</span>
 </code></pre></div></td></tr></table></div>
             </details>
