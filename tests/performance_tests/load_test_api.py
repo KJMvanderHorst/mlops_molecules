@@ -54,7 +54,11 @@ class MoleculeAPIPredictionUser(HttpUser):
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    if "prediction" in data and isinstance(data["prediction"], (int, float)):
+                    pred = data.get("prediction")
+                    # Accept scalar or single-element list of floats
+                    if isinstance(pred, (int, float)):
+                        response.success()
+                    elif isinstance(pred, list) and len(pred) == 1 and isinstance(pred[0], (int, float)):
                         response.success()
                     else:
                         response.failure(f"Invalid response format: {data}")

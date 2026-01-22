@@ -3,6 +3,6 @@ locust_file: tests/performance_tests/load_test_api.py
 host: ""  # Override via LOCUST_HOST env or task --host argument
 users: 50
 spawn_rate: 5
-run_time: 2m
+run_time: 1m
 csv_prefix: locust-results/results
 extra_args: ""  # Example: "--stop-timeout 30"
