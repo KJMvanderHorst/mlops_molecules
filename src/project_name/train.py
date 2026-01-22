@@ -24,9 +24,11 @@ from utils import get_data_path
 import multiprocessing
 from torch import nn
 
+
 def _num_workers(cfg: DictConfig) -> int:
     cores = multiprocessing.cpu_count()
     return min(4, cores)
+
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -102,6 +104,7 @@ def _get_device() -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
 
 @hydra.main(version_base=None, config_path=_CONFIG_PATH, config_name="config")
 def train(cfg: DictConfig) -> None:
@@ -226,7 +229,12 @@ def train(cfg: DictConfig) -> None:
         if epoch % LOG_INTERVAL == 0 or epoch == 1:
             logger.info(
                 "Epoch %3d | Train Loss: %.6f | Val MSE: %.6f | Val RMSE: %.6f | Val MAE: %.6f | Val R2: %.6f",
-                epoch, train_loss, val_metrics["mse"], val_metrics["rmse"], val_metrics["mae"], val_metrics["r2"]
+                epoch,
+                train_loss,
+                val_metrics["mse"],
+                val_metrics["rmse"],
+                val_metrics["mae"],
+                val_metrics["r2"],
             )
 
         improved = val_loss < best_val_loss
@@ -247,16 +255,13 @@ def train(cfg: DictConfig) -> None:
                 {
                     "epoch": epoch,
                     "loss/train": train_loss,
-
                     # keep your existing val loss key if you want
                     "loss/val": val_loss,
-
                     # add full validation metrics
                     "val/mse": val_metrics["mse"],
                     "val/rmse": val_metrics["rmse"],
                     "val/mae": val_metrics["mae"],
                     "val/r2": val_metrics["r2"],
-
                     "early_stopping/patience_counter": patience_counter,
                     "early_stopping/best_val_loss": best_val_loss,
                 }
@@ -289,9 +294,9 @@ def train(cfg: DictConfig) -> None:
     # Save final model
     final_model_path: Path = model_dir / "final_model.pt"
     torch.save(
-    model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
-    final_model_path,
-    )  
+        model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
+        final_model_path,
+    )
     logger.info("Training complete. Models saved to %s", model_dir)
 
     # wandb: final logs
@@ -299,7 +304,7 @@ def train(cfg: DictConfig) -> None:
         # Log full test metrics (assumes you computed `test_metrics` as shown before)
         wandb.log(
             {
-                "loss/test": test_loss,              # keep compatibility (MSE)
+                "loss/test": test_loss,  # keep compatibility (MSE)
                 "test/mse": test_metrics["mse"],
                 "test/rmse": test_metrics["rmse"],
                 "test/mae": test_metrics["mae"],

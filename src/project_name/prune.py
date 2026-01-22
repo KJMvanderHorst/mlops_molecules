@@ -124,15 +124,15 @@ def apply_unstructured_pruning(
         logger.warning("No prunable fully-connected (nn.Linear) layers found.")
         return {"modules_pruned": 0, "global_sparsity": 0.0}
 
-    for (m, pname) in pruned_modules:
+    for m, pname in pruned_modules:
         prune.l1_unstructured(m, name=pname, amount=amount)
 
-    for (m, pname) in pruned_modules:
+    for m, pname in pruned_modules:
         prune.remove(m, pname)
 
     total_elems = 0
     zero_elems = 0
-    for (m, pname) in pruned_modules:
+    for m, pname in pruned_modules:
         w = getattr(m, pname)
         total_elems += w.numel()
         zero_elems += int((w == 0).sum().item())
@@ -316,15 +316,21 @@ def main(cfg: DictConfig) -> None:
     )
     print("-" * 70)
     print("Performance (Test set)")
-    print(f"  Baseline: mse={base_metrics['mse']:.6f} rmse={base_metrics['rmse']:.6f} "
-          f"mae={base_metrics['mae']:.6f} r2={base_metrics['r2']:.6f}")
-    print(f"  Pruned:   mse={pruned_metrics['mse']:.6f} rmse={pruned_metrics['rmse']:.6f} "
-          f"mae={pruned_metrics['mae']:.6f} r2={pruned_metrics['r2']:.6f}")
+    print(
+        f"  Baseline: mse={base_metrics['mse']:.6f} rmse={base_metrics['rmse']:.6f} "
+        f"mae={base_metrics['mae']:.6f} r2={base_metrics['r2']:.6f}"
+    )
+    print(
+        f"  Pruned:   mse={pruned_metrics['mse']:.6f} rmse={pruned_metrics['rmse']:.6f} "
+        f"mae={pruned_metrics['mae']:.6f} r2={pruned_metrics['r2']:.6f}"
+    )
     print("-" * 70)
     print("Inference latency (average)")
     print(f"  Baseline: {base_latency['ms_per_batch']:.3f} ms/batch over {int(base_latency['batches'])} batches")
     print(f"  Pruned:   {pruned_latency['ms_per_batch']:.3f} ms/batch over {int(pruned_latency['batches'])} batches")
-    speedup = (base_latency["ms_per_batch"] / pruned_latency["ms_per_batch"]) if pruned_latency["ms_per_batch"] > 0 else 0.0
+    speedup = (
+        (base_latency["ms_per_batch"] / pruned_latency["ms_per_batch"]) if pruned_latency["ms_per_batch"] > 0 else 0.0
+    )
     print(f"  Speedup:  {speedup:.3f}x")
     print("=" * 70 + "\n")
 

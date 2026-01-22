@@ -131,6 +131,7 @@ def quantize_full_model(model: torch.nn.Module, scheme: str) -> torch.nn.Module:
     """
     if scheme == "torch_ao_dynamic":
         from torch.ao.quantization import quantize_dynamic  # older weights-only API
+
         return quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
 
     # default: torchao
@@ -140,10 +141,13 @@ def quantize_full_model(model: torch.nn.Module, scheme: str) -> torch.nn.Module:
     except Exception as e:
         logger.warning("torchao not available (%s). Falling back to torch.ao.quantization.quantize_dynamic.", e)
         from torch.ao.quantization import quantize_dynamic
+
         return quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
 
     # torchao quantize_ is inplace; returns None or model depending on version
-    quantize_(model, Int8WeightOnlyConfig())  #  [oai_citation:3‡PyTorch Documentation](https://docs.pytorch.org/ao/stable/generated/torchao.quantization.quantize_.html)
+    quantize_(
+        model, Int8WeightOnlyConfig()
+    )  #  [oai_citation:3‡PyTorch Documentation](https://docs.pytorch.org/ao/stable/generated/torchao.quantization.quantize_.html)
     return model
 
 
