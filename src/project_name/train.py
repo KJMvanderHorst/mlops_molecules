@@ -10,17 +10,25 @@ import torch
 import torch.nn.functional as F
 import wandb
 
-
 from omegaconf import DictConfig, OmegaConf
 from torch.optim import Optimizer
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
 
 from data import QM9Dataset
-from evaluate import evaluate
+from evaluate import evaluate_with_metrics
 from model import GraphNeuralNetwork
 from profiling import TrainingProfiler, timing_checkpoint
 from utils import get_data_path
+
+import multiprocessing
+from torch import nn
+
+
+def _num_workers(cfg: DictConfig) -> int:
+    cores = multiprocessing.cpu_count()
+    return min(4, cores)
+
 
 if TYPE_CHECKING:
     from torch_geometric.data import Dataset
@@ -90,13 +98,9 @@ def train_epoch(
 
 
 def _get_device() -> torch.device:
-    """Determine the best available device.
-
-    Returns:
-        PyTorch device (cuda/mps/cpu).
-    """
+    """Pick device. If multiple GPUs exist, use cuda:0 as primary for DataParallel."""
     if torch.cuda.is_available():
-        return torch.device("cuda")
+        return torch.device("cuda:0")
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
@@ -150,9 +154,36 @@ def train(cfg: DictConfig) -> None:
     )
 
     # Create data loaders
-    train_loader: DataLoader = DataLoader(train_dataset, batch_size=cfg.training.batch_size, shuffle=True)
-    val_loader: DataLoader = DataLoader(val_dataset, batch_size=cfg.training.batch_size, shuffle=False)
-    test_loader: DataLoader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, shuffle=False)
+    # Create data loaders (parallel loading)
+    workers = _num_workers(cfg)
+    logger.info("DataLoader num_workers=%d", workers)
+
+    train_loader: DataLoader = DataLoader(
+        train_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=True,
+        num_workers=workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=(workers > 0),
+    )
+
+    val_loader: DataLoader = DataLoader(
+        val_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=False,
+        num_workers=workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=(workers > 0),
+    )
+
+    test_loader: DataLoader = DataLoader(
+        test_dataset,
+        batch_size=cfg.training.batch_size,
+        shuffle=False,
+        num_workers=workers,
+        pin_memory=torch.cuda.is_available(),
+        persistent_workers=(workers > 0),
+    )
 
     logger.info("Dataset split - Train: %d, Val: %d, Test: %d", len(train_dataset), len(val_dataset), len(test_dataset))
 
@@ -162,12 +193,15 @@ def train(cfg: DictConfig) -> None:
     logger.info("Predicting %d target(s): %s", num_targets, target_indices)
 
     # Initialize model
-    model: GraphNeuralNetwork = GraphNeuralNetwork(
+    model: GraphNeuralNetwork | nn.DataParallel = GraphNeuralNetwork(
         num_node_features=cfg.model.num_node_features,
         hidden_dim=cfg.model.hidden_dim,
         num_layers=cfg.model.num_layers,
         output_dim=num_targets,
     ).to(device)
+
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
 
     optimizer: Optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
 
@@ -185,32 +219,49 @@ def train(cfg: DictConfig) -> None:
     )
     profiler = TrainingProfiler(enabled=profile, output_dir=Path(f"profiling_results/{profiler_run_dir}"))
 
-    # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
         train_loss: float = train_epoch(model, train_loader, optimizer, device, target_indices)
-        val_loss: float = evaluate(model, val_loader, device, target_indices)
+
+        # compute validation metrics (mse/rmse/mae/r2)
+        val_metrics = evaluate_with_metrics(model, val_loader, device, target_indices)
+        val_loss: float = float(val_metrics["mse"])  # keep early-stopping tied to MSE
 
         if epoch % LOG_INTERVAL == 0 or epoch == 1:
-            logger.info("Epoch %3d | Train Loss: %.6f | Val Loss: %.6f", epoch, train_loss, val_loss)
+            logger.info(
+                "Epoch %3d | Train Loss: %.6f | Val MSE: %.6f | Val RMSE: %.6f | Val MAE: %.6f | Val R2: %.6f",
+                epoch,
+                train_loss,
+                val_metrics["mse"],
+                val_metrics["rmse"],
+                val_metrics["mae"],
+                val_metrics["r2"],
+            )
 
-        # Save best model and handle early stopping
         improved = val_loss < best_val_loss
         if improved:
             best_val_loss = val_loss
             patience_counter = 0
             best_model_path: Path = model_dir / "best_model.pt"
-            torch.save(model.state_dict(), best_model_path)
+            torch.save(
+                model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
+                best_model_path,
+            )
             logger.debug("Saved best model to %s", best_model_path)
         else:
             patience_counter += 1
 
-        # wandb logging (safe if disabled)
         if run is not None:
             wandb.log(
                 {
                     "epoch": epoch,
                     "loss/train": train_loss,
+                    # keep your existing val loss key if you want
                     "loss/val": val_loss,
+                    # add full validation metrics
+                    "val/mse": val_metrics["mse"],
+                    "val/rmse": val_metrics["rmse"],
+                    "val/mae": val_metrics["mae"],
+                    "val/r2": val_metrics["r2"],
                     "early_stopping/patience_counter": patience_counter,
                     "early_stopping/best_val_loss": best_val_loss,
                 }
@@ -231,20 +282,38 @@ def train(cfg: DictConfig) -> None:
     except TypeError:
         state = torch.load(best_model_path)
 
-    model.load_state_dict(state)
+    if isinstance(model, nn.DataParallel):
+        model.module.load_state_dict(state)
+    else:
+        model.load_state_dict(state)
 
-    test_loss: float = evaluate(model, test_loader, device, target_indices)
+    test_metrics: dict[str, float] = evaluate_with_metrics(model, test_loader, device, target_indices)
+    test_loss: float = float(test_metrics["mse"])
     logger.info("Final test loss: %.6f", test_loss)
 
     # Save final model
     final_model_path: Path = model_dir / "final_model.pt"
-    torch.save(model.state_dict(), final_model_path)
+    torch.save(
+        model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
+        final_model_path,
+    )
     logger.info("Training complete. Models saved to %s", model_dir)
 
     # wandb: final logs
     if run is not None:
-        wandb.log({"loss/test": test_loss})
+        # Log full test metrics (assumes you computed `test_metrics` as shown before)
+        wandb.log(
+            {
+                "loss/test": test_loss,  # keep compatibility (MSE)
+                "test/mse": test_metrics["mse"],
+                "test/rmse": test_metrics["rmse"],
+                "test/mae": test_metrics["mae"],
+                "test/r2": test_metrics["r2"],
+            }
+        )
 
+        # Optionally log model artifact
+        artifact = None
         if bool(OmegaConf.select(cfg, "wandb.log_artifacts", default=True)):
             artifact = wandb.Artifact(
                 name="qm9-gnn",
@@ -253,11 +322,21 @@ def train(cfg: DictConfig) -> None:
                 metadata={
                     "target_indices": target_indices,
                     "best_val_loss": best_val_loss,
-                    "test_loss": test_loss,
+                    "test_mse": test_metrics["mse"],
+                    "test_rmse": test_metrics["rmse"],
+                    "test_mae": test_metrics["mae"],
+                    "test_r2": test_metrics["r2"],
                 },
             )
             artifact.add_file(str(best_model_path))
             run.log_artifact(artifact)
+
+            # Link only if we actually created an artifact
+            run.link_artifact(
+                artifact=artifact,
+                target_path="model-registry/mlops-molecules",
+                aliases=["latest"],
+            )
 
         wandb.finish()
 

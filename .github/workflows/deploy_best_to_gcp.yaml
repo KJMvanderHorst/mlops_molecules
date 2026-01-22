@@ -1,0 +1,53 @@
+name: Deploy Best Model to GCP
+
+on:
+  repository_dispatch:
+    types: [best_model_updated]
+  workflow_dispatch:
+    inputs:
+      artifact_path:
+        description: "W&B artifact path (e.g., entity/project/model:version)"
+        required: true
+        type: string
+
+jobs:
+  deploy-to-gcp:
+    name: Deploy best model to GCS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install wandb google-cloud-storage
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+      - name: Download best model from W&B
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+        run: |
+          uv run python src/project_name/download_model.py --artifact-path "${{ github.event.client_payload.artifact_path || inputs.artifact_path }}" --output-dir model_dir
+
+      - name: Upload model to GCS
+        run: |
+          gsutil cp model_dir/* gs://molecules_bucket/models/best_model.pt
+
+      - name: Log deployment
+        run: |
+          echo "Model deployed to gs://molecules_bucket/models/"
+          echo "Artifact path: ${{ github.event.client_payload.artifact_path || inputs.artifact_path }}"
