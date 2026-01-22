@@ -16,7 +16,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
 
 from data import QM9Dataset
-from evaluate import evaluate
+from evaluate import evaluate, evaluate_with_metrics
 from model import GraphNeuralNetwork
 from profiling import TrainingProfiler, timing_checkpoint
 from utils import get_data_path
@@ -216,35 +216,47 @@ def train(cfg: DictConfig) -> None:
     )
     profiler = TrainingProfiler(enabled=profile, output_dir=Path(f"profiling_results/{profiler_run_dir}"))
 
-    # Training loop
     for epoch in range(1, cfg.training.epochs + 1):
         train_loss: float = train_epoch(model, train_loader, optimizer, device, target_indices)
-        val_loss: float = evaluate(model, val_loader, device, target_indices)
+
+        # compute validation metrics (mse/rmse/mae/r2)
+        val_metrics = evaluate_with_metrics(model, val_loader, device, target_indices)
+        val_loss: float = float(val_metrics["mse"])  # keep early-stopping tied to MSE
 
         if epoch % LOG_INTERVAL == 0 or epoch == 1:
-            logger.info("Epoch %3d | Train Loss: %.6f | Val Loss: %.6f", epoch, train_loss, val_loss)
+            logger.info(
+                "Epoch %3d | Train Loss: %.6f | Val MSE: %.6f | Val RMSE: %.6f | Val MAE: %.6f | Val R2: %.6f",
+                epoch, train_loss, val_metrics["mse"], val_metrics["rmse"], val_metrics["mae"], val_metrics["r2"]
+            )
 
-        # Save best model and handle early stopping
         improved = val_loss < best_val_loss
         if improved:
             best_val_loss = val_loss
             patience_counter = 0
             best_model_path: Path = model_dir / "best_model.pt"
             torch.save(
-            model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
-            best_model_path,
+                model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
+                best_model_path,
             )
             logger.debug("Saved best model to %s", best_model_path)
         else:
             patience_counter += 1
 
-        # wandb logging (safe if disabled)
         if run is not None:
             wandb.log(
                 {
                     "epoch": epoch,
                     "loss/train": train_loss,
+
+                    # keep your existing val loss key if you want
                     "loss/val": val_loss,
+
+                    # add full validation metrics
+                    "val/mse": val_metrics["mse"],
+                    "val/rmse": val_metrics["rmse"],
+                    "val/mae": val_metrics["mae"],
+                    "val/r2": val_metrics["r2"],
+
                     "early_stopping/patience_counter": patience_counter,
                     "early_stopping/best_val_loss": best_val_loss,
                 }
@@ -270,7 +282,8 @@ def train(cfg: DictConfig) -> None:
     else:
         model.load_state_dict(state)
 
-    test_loss: float = evaluate(model, test_loader, device, target_indices)
+    test_metrics: dict[str, float] = evaluate_with_metrics(model, test_loader, device, target_indices)
+    test_loss: float = float(test_metrics["mse"])
     logger.info("Final test loss: %.6f", test_loss)
 
     # Save final model
@@ -283,8 +296,19 @@ def train(cfg: DictConfig) -> None:
 
     # wandb: final logs
     if run is not None:
-        wandb.log({"loss/test": test_loss})
+        # Log full test metrics (assumes you computed `test_metrics` as shown before)
+        wandb.log(
+            {
+                "loss/test": test_loss,              # keep compatibility (MSE)
+                "test/mse": test_metrics["mse"],
+                "test/rmse": test_metrics["rmse"],
+                "test/mae": test_metrics["mae"],
+                "test/r2": test_metrics["r2"],
+            }
+        )
 
+        # Optionally log model artifact
+        artifact = None
         if bool(OmegaConf.select(cfg, "wandb.log_artifacts", default=True)):
             artifact = wandb.Artifact(
                 name="qm9-gnn",
@@ -293,11 +317,21 @@ def train(cfg: DictConfig) -> None:
                 metadata={
                     "target_indices": target_indices,
                     "best_val_loss": best_val_loss,
-                    "test_loss": test_loss,
+                    "test_mse": test_metrics["mse"],
+                    "test_rmse": test_metrics["rmse"],
+                    "test_mae": test_metrics["mae"],
+                    "test_r2": test_metrics["r2"],
                 },
             )
             artifact.add_file(str(best_model_path))
             run.log_artifact(artifact)
+
+            # Link only if we actually created an artifact
+            run.link_artifact(
+                artifact=artifact,
+                target_path="model-registry/mlops-molecules",
+                aliases=["latest"],
+            )
 
         wandb.finish()
 
