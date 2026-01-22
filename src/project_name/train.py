@@ -16,7 +16,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import NormalizeScale
 
 from data import QM9Dataset
-from evaluate import evaluate, evaluate_with_metrics
+from evaluate import evaluate_with_metrics
 from model import GraphNeuralNetwork
 from profiling import TrainingProfiler, timing_checkpoint
 from utils import get_data_path

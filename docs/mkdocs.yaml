@@ -1,5 +1,5 @@
-site_name: project_name
-site_author: Your name (or your organization/company/team)
+site_name: Documentation of MLOps-Molecules Project
+site_author: Boldizsár Horváth, Kasper van der Horst, Przemek Kaleta
 docs_dir: source
 
 theme:
@@ -11,6 +11,7 @@ theme:
 
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
       handlers:
         python:
@@ -18,6 +19,11 @@ plugins:
             show_root_heading: true
             separate_signature: true
             show_signature_annotations: true
-
 nav:
   - Home: index.md
+  - API Reference:
+      - Model: model.md
+      - Inference: my_api.md
+      - Data & IO: data.md
+      - Training Pipeline: training.md
+      - Utilities & Visualization: utilities.md
