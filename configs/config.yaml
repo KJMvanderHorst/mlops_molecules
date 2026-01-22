@@ -2,6 +2,7 @@ defaults:
   - model: gnn
   - training: standard
   - wandb: default
+  - pruning: default
   - _self_
 
 seed: 42
