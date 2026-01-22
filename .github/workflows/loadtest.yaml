@@ -3,7 +3,6 @@ name: Post-Deploy Load Test
 on:
   workflow_run:
     workflows: ["Unit Tests and Build"]
-    branches: [master]
     types: [completed]
 
 jobs:
