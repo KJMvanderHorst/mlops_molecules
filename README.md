@@ -10,9 +10,7 @@ The focus of the project is on building a **functional, accurate, and deployable
 
 ## Frameworks and Tools
 
-The project will be implemented using **PyTorch** as the primary deep learning framework, with **PyTorch Lightning** providing a structured and modular approach to model training, validation, and evaluation. PyTorch Lightning reduces boilerplate code and promotes best practices for experiment organization, making the training pipeline easier to maintain and extend.
-
-To handle graph-structured data and message-passing operations, the project uses **PyTorch Geometric (PyG)**. PyG provides optimized data loaders, graph neural network layers, and utility functions that are well-suited for molecular datasets. These frameworks are integrated into a clean codebase designed for reproducibility and clarity, supporting future experimentation or deployment.
+The project will be implemented using **PyTorch** as the primary deep learning framework. To handle graph-structured data and message-passing operations, the project uses **PyTorch Geometric (PyG)**. PyG provides optimized data loaders, graph neural network layers, and utility functions that are well-suited for molecular datasets. These frameworks are integrated into a clean codebase designed for reproducibility and clarity, supporting future experimentation or deployment.
 
 ---
 
@@ -118,3 +116,5 @@ The directory structure of the project looks like this:
 Created using [mlops_template](https://github.com/SkafteNicki/mlops_template),
 a [cookiecutter template](https://github.com/cookiecutter/cookiecutter) for getting
 started with Machine Learning Operations (MLOps).
+
+An overview of the documentation of this project can be found [here](https://kjmvanderhorst.github.io/mlops_molecules/)
