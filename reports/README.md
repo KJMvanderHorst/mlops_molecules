@@ -124,7 +124,11 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- 61 ---
+---
+
+61
+
+---
 
 ### Question 2
 
@@ -136,7 +140,11 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- s252012, s252994, s254301 ---
+---
+
+s252012, s252994, s254301
+
+---
 
 ### Question 3
 
@@ -397,14 +405,15 @@ We made use of config files with Hydra, which helped us to retain information ab
 ![sweep](figures/sweep.png).
 
 - loss/train: training objective necessary for early stopping and training. (detect underfitting etc.)
-- loss/val: validation performance is the main signal for generalization. (detect overfitting etc.)
+- loss/val: validation performance is the main signal for generalization. (detect overfitting etc.). It is also used to estimate the importance of hyperparameters of the model (done in W&B)
 - loss/test: logged once at the end using the best validation checkpoint. This gives an unbiased estimate of final performance.
 - val/rmse: RMSE is in the same unit as the target and penalizes large errors more strongly than MAE. Useful when large mistakes are especially undesirable and for comparing typical prediction error magnitude.
 - val/mae: Also in the target unit, but more robust to outliers than RMSE. Good for understanding the “typical” absolute deviation without over-emphasizing rare big errors.
 - val/r2: Measures how much variance in the target the model explains (relative to a mean-prediction baseline). Helpful to compare runs on a scale-free measure of goodness-of-fit.
 - early stopping: As val/loss differences can be small this way we can see the early stopping patience much more easily.
 - epoch: Straighforward to see the current epoch count.
-The metrics val/rmse, val/r2, and val mae are not only used in tracking, but also to dicide upon the best model tag mentioned before. 
+
+The metrics val/rmse, val/r2, and val mae are not only used in tracking, but also to decide upon the best model tag mentioned before.
 
 ---
 
@@ -423,7 +432,7 @@ The metrics val/rmse, val/r2, and val mae are not only used in tracking, but als
 
 ---
 
-For our project we developed 3 docker images: one for training the model, and two for deployment (inference service and creating data drift report). As an example to run the docker image to run the API used for inference on port 8000 the right command is: `docker run --rm -e PORT=8000 -p 8000:8000 api:latest`. Link to the docker file: [api.dockerfile](https://github.com/KJMvanderHorst/mlops_molecules/blob/master/dockerfiles/api.dockerfile)
+For our project we developed 3 docker images: one for training the model, and two for deployment. We used container made for training to train our model in the cloud using Vertex AI in an enviroment that we could exactly controll and be sure that we can reproduce it later on. When it comes to the deployment, there were two parts that were using Docker images: inference service and reporting on data drift. Since both of them were deployed in the cloud, they also needed to be containerized As an example to run the docker image to run the API used for inference on port 8000 the right command is: `docker run --rm -e PORT=8000 -p 8000:8000 api:latest`. Link to the docker file: [api.dockerfile](https://github.com/KJMvanderHorst/mlops_molecules/blob/master/dockerfiles/api.dockerfile)
 
 ---
 
@@ -497,7 +506,11 @@ In this project, we did not use the compute engine directly in any case. All of 
 >
 > Answer:
 
---- ![bucket1](figures/bucket1.png) ---
+---
+
+![bucket1](figures/bucket1.png)
+
+---
 
 ### Question 20
 
@@ -506,7 +519,11 @@ In this project, we did not use the compute engine directly in any case. All of 
 >
 > Answer:
 
---- ![artifact](figures/artifact.png) ---
+---
+
+![artifact](figures/artifact.png)
+
+---
 
 ### Question 21
 
@@ -515,7 +532,11 @@ In this project, we did not use the compute engine directly in any case. All of 
 >
 > Answer:
 
---- ![cloud_history](figures/cloud_history.png) ---
+---
+
+![cloud_history](figures/cloud_history.png)
+
+---
 
 ### Question 22
 
@@ -532,8 +553,7 @@ In this project, we did not use the compute engine directly in any case. All of 
 
 ---
 
-Yes, we did, we have used Vertex AI for our model training in the cloud. We have connected it W&DB for logging.
-We first containerized our code and enviroment, pushed the image to Artifact Registry, then with a custom job via gcloud ai -custom-jobs using a yaml file submitted the job. We chose Vertex AI and not the Engine, because it was much more convenient to work with. We have also implemented a system to save the trained models after on the Bucket.
+We have managed to use Vertex AI for our model training in the cloud. We have connected it also to W&B for logging to make the whole process easier to track and reproduce. We started by first containerizing our code and enviroment, pushing the image to Artifact Registry, and then submitting the job as a custom job via gcloud ai -custom-jobs using a yaml file. We chose Vertex AI and not the Engine, because it was much more convenient to work with as we believe that Vertex AI is better suited for the purposes of model training. We have also implemented a system to save the trained models after in the Google Cloud Bucket.
 
 ---
 
@@ -641,7 +661,7 @@ During this course we did manage to implement a type of monitoring which is spec
 
 ---
 
-Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in total throughout the whole course for the purpose of project developement. The service costing the most was Vertex AI which we used for model training, which was expected as it ran for the most ammount of time and also consumed resources like GPU which are more expensive, than for example storage. Working in the cloud was painfull, as it slowed the process of developement substantially. On the other hand, it enabled us to use previously unreachable resources such as GPU access.
+Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in total throughout the whole course for the purpose of developing this project. The service costing the most was Vertex AI, which we used for the purpose of training our model. That was expected as it ran for the most ammount of time and also consumed resources like GPU which are more expensive, than for example storage. Working in the cloud was painfull, as it slowed the process of developement substantially and also caused more error related to permissions and service accounts. On the other hand, it enabled us to use previously unreachable resources such as GPU access.
 
 ---
 
@@ -659,7 +679,11 @@ Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in to
 >
 > Answer:
 
---- No, we have not implemented anything new, however we did implement a more expansive CI. ---
+---
+
+No, we have not implemented anything new, however we did implement a more expansive CI.
+
+---
 
 ### Question 29
 
@@ -677,7 +701,9 @@ Every member of the used between 3.49 and 3.82 USD, which is around 10 USD in to
 > Answer:
 
 ---
+
 ![overview](figures/overview.jpg)
+
 The starting point of the diagram is the local dev setup, we write code which we push to github. This triggers our precommits to make sure we have nice formatting and it runs the mock api and unittests. When a pull request is made to merge a branch into master, the docker images are built and put in a registry in the GCP automatically through github actions. This also updates the cloud run service. After the cloud run service is deployed, the service is automatically load tested using locust, and the output of the load testing is stored in github action artifacts. From the local machine you can train models with wandb, either locally or in vertex ai. To use vertex ai the necessary docker images need to be present in the registry. When a model is trained, the model weights and the training configuration are stored in wandb and the model is added to the registry in wandb. The registry always contains one model with the tag: best_model When a new model is added to the registry it triggers a github workflow which loads the newly trained model and the current best model and compares them. In the case that the newly trained model is the best model it gets the tag best_model and a new github action is triggered. This action downloads this best model from the wandb registry and replaces the current model in the gcp bucket, the model which our cloud run uses, with the new best model. This ensures the model used in our service is always the best one. When users interact with our cloud run service, the input data they provide is stored in a bucket in the cloud. Evidently is used to monitor the distribution of the input data and target values.
 
 ---
@@ -722,4 +748,5 @@ Student s252994 was in charge of making the docker images, making a profiler, wr
 Student s254301 was in charge of setting up the repository with ccds, the basic training, evaluate and data scripts. Setting up the google cloud, the bucket, the neccesary service accounts, dvc, configuration management, CI/CD, api testing, and documentation.
 Student s252012 contributed by setting up Vertex AI, W&DB, half of CI, the Unit Tests. Good Coding Practices, Distributed Data Loading, Distributed Loading, Pruning, and Quantization.
 All members contributed to the code with constant collababoration. The split mentioned above indicates only what people mainly worked on. We have used ChatGPT and Github Copilot to help debug and write some of the code.
+
 ---
