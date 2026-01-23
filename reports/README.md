@@ -484,7 +484,11 @@ We have used Secrets Management to upload our API keys and connect them for exam
 >
 > Answer:
 
---- No, we have not used the Compute Engine, as all of the necessary tools were already implemented by Vertex AI. ---
+--- 
+
+In this project, we did not use the compute engine directly in any case. All of the compute in google cloud was done using vertex ai. We had a confifuration file: vertex_ai_train.yaml. We used vertex ai custom training jobs for model training, this allowed us not to worry about managing the compute engine ourselves as this was managed by vetex ai. The training configuration was submitted using the gcloud ai custom jobs create command. The training code was then executed through the docker container which was present in the registry in the gcp. The gcloud secrets manager allowed us to log to wandbd even when training was performed in the cloud. 
+
+---
 
 ### Question 19
 
