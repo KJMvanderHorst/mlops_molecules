@@ -151,7 +151,11 @@ will check the repositories and the code to verify your answers.
 >
 > Answer:
 
---- We used pytorch geometric, otherwise we only used frameworks/packages covered during the project. ---
+--- 
+
+We used pytorch geometric, otherwise we only used frameworks/packages covered during the project.
+
+---
 
 ## Coding environment
 
@@ -173,7 +177,7 @@ will check the repositories and the code to verify your answers.
 
 ---
 
-We used uv for managing dependencies, everytime we had to introduce a new dependency we used `uv add <dependency name>`. This will automatically updated the pyproject.toml aswell as the uv.lock file for exact version pinning. For a new person to get our exact development enviroment one would need to firstly install uv, secondly clone the repository and navigate to it, and finally run `uv sync` to create a virtual enviroment and install all dependencies as specified in the lock file. In order to run scripts one then would need to use `uv run`.
+In this project used uv for managing dependencies, everytime we had to introduce a new dependency we used `uv add <dependency name>`. This will automatically update the pyproject.toml file aswell as the uv.lock file for exact version pinning. For a new person to get our exact development enviroment one would need to firstly install uv using `pip install uv` or using curl, secondly clone the repository and navigate to it, and finally run `uv sync` to create a virtual enviroment and install all dependencies as specified in the lock file. In order to run scripts one then would need to use `uv run <path_to_file>`.
 
 ---
 
