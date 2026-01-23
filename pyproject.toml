@@ -28,7 +28,7 @@ dependencies = [
     "pathspec==0.12.1",
     "torch==2.6.0",
     "torch-geometric>=2.7.0",
-    "typer==0.15.1",
+    "typer==0.21.1",
     "uvicorn==0.34.0",
     "wandb>=0.24.0",
     "evidently>=0.7.20",
