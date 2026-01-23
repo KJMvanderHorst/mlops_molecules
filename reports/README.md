@@ -216,7 +216,7 @@ We have filled out the dockerfiles, docs, models, src, and tests folder. The mod
 
 ---
 
-Firstly, we have added docstrings to all the functions in our project. Secondly, we have also used typing in all the functions to ensure functions only run when provided with the correct input tuypes. For linting and formatting we have used ruff, in our precomit hooks we have included `ruff format --check` as well as `ruff check` to ensure we comply with formatting and it is consistent across the whole project. We do not currently employ a typechecker such as mypy in the precommit. In large projects these practices are important in order to keep the codebase easier to maintain and update, and more importantly prevent bugs.
+Firstly, we have added docstrings to all the functions in our project. Secondly, we have also used typing in all the functions to ensure functions only run when provided with the correct input tuypes. For linting and formatting we have used ruff, in our precomit hooks we have included `ruff format --check` as well as `ruff check` to ensure we comply with formatting and it is consistent across the whole project. We do not currently employ a typechecker such as mypy in the precommit but this could be something which could have caught bugs earlier by. In large projects these practices are important in order to keep the codebase easier to maintain and update, and more importantly prevent bugs.
 
 ---
 
@@ -318,12 +318,12 @@ We did use DVC for managing data in our project, despite the fact that the datas
 ---
 
 We run our continuous integration (CI) on GitHub Actions, and we intentionally split responsibilities:
-tests.yaml runs on pull requests to master and executes our unit/integration tests with pytest + coverage. Dependencies are managed via uv, and we enable caching to speed up repeated installs (especially helpful when iterating on PRs).
-linting.yaml runs on both pushes and PRs to master and enforces code quality using Ruff for linting and formatting. In addition, we maintain a .pre-commit configuration so most formatting issues are fixed automatically before code reaches CI, keeping PR feedbacd consistent.
+tests.yaml runs on pull requests to master and executes our unit/integration tests with pytest + coverage. Aditionally this yaml file also deploys our cloud services by calling the cloudbuild.yaml file. This is only run however, only if our unit tests all pass. Dependencies are managed via uv, and we enable caching to speed up repeated installs (especially helpful when iterating on PRs).
+linting.yaml runs on both pushes and PRs to master and enforces code quality using Ruff for linting and formatting. In addition, we maintain a .pre-commit configuration so most formatting issues are fixed automatically before code reaches CI, keeping PR feedback consistent.
 deploy_docs.yaml runs on pushes to master and builds + deploys our documentation site (MkDocs) to GitHub Pages, ensuring docs stay in sync with the main branch.
-loadtest.yaml: After Unit Tests and Build complete successfully, runs a locust load test against the deployed Cloud Run service (invoke loadtest).
-compare_best_model.yaml: Compare the best performing model and promote the tag to wandb.
-deploy_best_to_gcp.yaml: download this specified model from wandb and upload it to GCP.
+loadtest.yaml: After Unit Tests and Build complete successfully, runs a locust load test against the deployed Cloud Run service (invoke loadtest). This is run via invoke in order to enable hydra to manage the configuration of the load testing, which would not have been possible if we called the load test directly from the command line.
+compare_best_model.yaml: Integrated through wandb webhooks, this is ran whenever a new model is added to the registry, and compares the model with the current best_model tag to the newly trained model and switches the tag if appropriate.
+deploy_best_to_gcp.yaml: Is ran if the best_model tag switches and downloads this best model and uploads it to the gcp bucket storing the model used in our cloud run service.
 https://github.com/KJMvanderHorst/mlops_molecules/blob/master/.github/workflows/linting.yaml
 
 ---
@@ -366,13 +366,13 @@ We used hydra to manage all the paramaters used in our experiments. We had one c
 
 ---
 
-We made use of config files with Hydra, which helped us to retain information about training hyperparameters. We also used Weights and Biases to do hyperparameter sweeps, and to save our models together with data. Whenever an experiment is run, the hyperparameters are taken from a config file. Hydra automatically creates an output directory with crucial informantions. To reproduce an experiment, one would:
+We made use of config files with Hydra, which helped us to retain information about training hyperparameters. We also used Weights and Biases to do hyperparameter sweeps, and to save our models together with data. Whenever an experiment is run, the hyperparameters are taken from a config file. However since this information is tracked by wandb, we supress the hydra output directory To reproduce an experiment, one would:
 
-1. Clone the repository and run `uv sync` to get the exact dependency versions
-2. Pull the data using `dvc pull` to get the correct dataset version
-3. Either use the saved Hydra config from the outputs directory or download it from the W&B run page
-4. Run the training with: `uv run python src/project_name/train.py --config-path /path/to/.hydra/ --config-name config`
-5. Alternatively, override specific parameters: `uv run python src/project_name/train.py model.lr=0.001 model.batch_size=64`
+1. Clone the repository and run `uv sync` to get the exact dependency versions.
+2. Pull the data using `dvc pull` to get the correct dataset version.
+3. Download all the necessary parameters from the wandbd page.
+4. Run the training with: `uv run python src/project_name/train.py --config-path /path/to/.hydra/ --config-name config`.
+5. Alternatively, override specific parameters: `uv run python src/project_name/train.py model.lr=0.001 model.batch_size=64`.
    This ensures complete reproducibility of any experiment from the project history.
 
 ---
@@ -402,9 +402,9 @@ We made use of config files with Hydra, which helped us to retain information ab
 - val/rmse: RMSE is in the same unit as the target and penalizes large errors more strongly than MAE. Useful when large mistakes are especially undesirable and for comparing typical prediction error magnitude.
 - val/mae: Also in the target unit, but more robust to outliers than RMSE. Good for understanding the “typical” absolute deviation without over-emphasizing rare big errors.
 - val/r2: Measures how much variance in the target the model explains (relative to a mean-prediction baseline). Helpful to compare runs on a scale-free measure of goodness-of-fit.
-- The last three are necessary to choose the best model tag too.
-- early stopping: As val/loss differences can be small this way we can easier see the early stopping patience.
+- early stopping: As val/loss differences can be small this way we can see the early stopping patience much more easily.
 - epoch: Straighforward to see the current epoch count.
+The metrics val/rmse, val/r2, and val mae are not only used in tracking, but also to dicide upon the best model tag mentioned before. 
 
 ---
 
